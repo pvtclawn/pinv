@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
 import { renderWidget } from '@/lib/widget-renderer';
 
-export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
   try {
