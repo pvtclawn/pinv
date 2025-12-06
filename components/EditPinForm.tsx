@@ -11,7 +11,9 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import { useAccount } from "wagmi";
 import { Pin } from "@/types";
-import { Loader2, Wand2, Save, ScanFace, Play } from "lucide-react";
+import { AlertCircle, Loader2, Play, Save, ScanFace, Sparkles, Terminal, Wand2 } from "lucide-react";
+import PinParams from "@/components/PinParams";
+import PinDisplayCard from "@/components/PinDisplayCard";
 import Link from "next/link";
 
 interface EditPinFormProps {
@@ -242,21 +244,12 @@ export default function EditPinForm({ fid, pin }: EditPinFormProps) {
                                     <CardDescription>Configure your widget settings.</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    {parameters.length === 0 && <p className="text-sm text-muted-foreground">No configurable parameters.</p>}
-                                    {parameters.map((param, idx) => (
-                                        <div key={idx} className="space-y-2">
-                                            <Label>{param.name}</Label>
-                                            <Input
-                                                value={previewData[param.name] || ''}
-                                                onChange={(e) => {
-                                                    const newData = { ...previewData, [param.name]: e.target.value };
-                                                    setPreviewData(newData);
-                                                }}
-                                                placeholder={param.description}
-                                            />
-                                            <p className="text-xs text-muted-foreground">{param.description}</p>
-                                        </div>
-                                    ))}
+                                    <PinParams
+                                        mode="edit"
+                                        parameters={parameters}
+                                        values={previewData}
+                                        onChange={setPreviewData}
+                                    />
                                     <Button
                                         variant="outline"
                                         size="sm"
@@ -343,38 +336,24 @@ export default function EditPinForm({ fid, pin }: EditPinFormProps) {
 
                 {/* Right Column: Preview */}
                 <div className="flex flex-col gap-6">
-                    <Card className="h-full flex flex-col">
-                        <CardHeader>
-                            <CardTitle>Live Preview</CardTitle>
-                            <CardDescription>Target: 1200x800px (Farcaster Embed)</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex-1 flex items-center justify-center bg-muted/20 rounded-lg m-6 border-2 border-dashed relative overflow-hidden min-h-[400px]">
-                            {previewImageUrl ? (
-                                <img src={previewImageUrl} alt="Widget Preview" className="max-w-full max-h-full object-contain shadow-2xl rounded-lg" />
-                            ) : (
-                                <div className="text-center text-muted-foreground">
-                                    <ScanFace className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                                    <p>Generate a widget to see preview</p>
-                                </div>
-                            )}
-                            {isPreviewLoading && (
-                                <div className="absolute inset-0 bg-background/50 flex items-center justify-center backdrop-blur-sm">
-                                    <Loader2 className="h-8 w-8 animate-spin" />
-                                </div>
-                            )}
-                        </CardContent>
-                        <CardFooter className="justify-end border-t p-6">
-                            <div className="flex gap-4">
-                                <Button variant="ghost" asChild>
-                                    <Link href={`/p/${fid}`}>Cancel</Link>
-                                </Button>
-                                <Button onClick={handleSave} disabled={!hasGenerated}>
-                                    <Save className="mr-2 h-4 w-4" />
-                                    Save Pin
-                                </Button>
-                            </div>
-                        </CardFooter>
-                    </Card>
+                    <PinDisplayCard
+                        title="Live Preview"
+                        description="Target: 1200x800px (Farcaster Embed)"
+                        imageSrc={previewImageUrl}
+                        isLoading={isPreviewLoading}
+                        placeholderText="Generate a widget to see preview"
+                        className="h-full"
+                    >
+                        <div className="flex justify-end gap-4 w-full">
+                            <Button variant="ghost" asChild>
+                                <Link href={`/p/${fid}`}>Cancel</Link>
+                            </Button>
+                            <Button onClick={handleSave} disabled={!hasGenerated}>
+                                <Save className="mr-2 h-4 w-4" />
+                                Save Pin
+                            </Button>
+                        </div>
+                    </PinDisplayCard>
                 </div>
             </div>
         </div>

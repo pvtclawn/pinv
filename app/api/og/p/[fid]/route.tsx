@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { blockchainService } from '@/lib/blockchain-service';
 
-export const runtime = 'edge';
+
 
 export async function GET(
     request: Request,
@@ -63,32 +63,70 @@ export async function GET(
     // 4. Render Dynamic Widget (if available)
     if (pin.widget && pin.widget.reactCode) {
         try {
-            // Merge defaults (previewData) -> Saved Config -> Query Params
-            const widgetProps = {
+            // Merge defaults (previewData) -> Saved Config
+            const baseProps: any = {
                 ...(pin.widget.previewData || {}),
                 ...(pin.widget.userConfig || {}),
             };
 
-            // Override with query params if they match widget parameters
+            // 4.1. Determine Input Parameters
+            const inputParams = { ...baseProps }; // Start with merged config/defaults
+
+            // Override with query params if allowed
             if (pin.widget.parameters) {
                 pin.widget.parameters.forEach((param: any) => {
                     const queryValue = searchParams.get(param.name);
                     if (queryValue) {
-                        widgetProps[param.name] = queryValue;
+                        inputParams[param.name] = queryValue;
                     }
                 });
             }
 
+            // 4.2. Execute Backend Code (Lit Action) to get standard props
+            // This is crucial for dynamic widgets (e.g. Weather) to fetch fresh data based on inputParams
+            let calculatedProps = { ...inputParams };
+
+            if (pin.widget.litActionCode) {
+                try {
+                    // Quick and dirty execution of the "backend" logic in Node
+                    // NOTE: In production, this should be sandboxed (e.g. cloudflare workers, isolated-vm)
+
+                    // The code usually ends with "main" or returns the function. 
+                    // We wrap it to extract the main function.
+                    const backendFn = new Function(
+                        `return (async () => { 
+                            ${pin.widget.litActionCode}
+                            if (typeof main !== 'undefined') return main;
+                            return null;
+                        })()`
+                    );
+
+                    const mainFn = await backendFn();
+                    if (typeof mainFn === 'function') {
+                        console.log(`[OG] Executing backend logic for pin ${fid} with inputs:`, JSON.stringify(inputParams));
+                        const result = await mainFn(inputParams);
+                        // Merge the result of execution (e.g. temp, wind) into the props passed to React
+                        calculatedProps = { ...calculatedProps, ...result };
+                    }
+                } catch (err) {
+                    console.error("Failed to execute backend code:", err);
+                    // Continue with default props if backend fails
+                }
+            }
+
+            // 4.3. Render React Widget
+
             // Add standard context
-            widgetProps.viewer_fid = 'preview'; // In real app, this comes from signed message
+            calculatedProps.viewer_fid = 'preview';
 
             const { renderWidget } = await import('@/lib/widget-renderer');
             // @ts-ignore
-            return await renderWidget(pin.widget.reactCode, widgetProps);
+            return await renderWidget(pin.widget.reactCode, calculatedProps);
         } catch (e) {
             console.error("Failed to render dynamic widget in OG:", e);
             // Fallback to default card
         }
+    } else {
     }
 
     return new ImageResponse(
