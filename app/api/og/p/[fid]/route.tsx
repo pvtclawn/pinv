@@ -21,6 +21,7 @@ export async function GET(
         accentColor: '#000000',
         stats: { githubRepos: 0, githubStars: 0, followerCount: 0 },
         widgets: [],
+        widget: undefined,
         lastUpdated: new Date().toISOString()
     };
 
@@ -56,6 +57,37 @@ export async function GET(
             }
         } catch (e) {
             console.error('Failed to fetch GitHub data for OG image', e);
+        }
+    }
+
+    // 4. Render Dynamic Widget (if available)
+    if (pin.widget && pin.widget.reactCode) {
+        try {
+            // Merge defaults (previewData) -> Saved Config -> Query Params
+            const widgetProps = {
+                ...(pin.widget.previewData || {}),
+                ...(pin.widget.userConfig || {}),
+            };
+
+            // Override with query params if they match widget parameters
+            if (pin.widget.parameters) {
+                pin.widget.parameters.forEach((param: any) => {
+                    const queryValue = searchParams.get(param.name);
+                    if (queryValue) {
+                        widgetProps[param.name] = queryValue;
+                    }
+                });
+            }
+
+            // Add standard context
+            widgetProps.viewer_fid = 'preview'; // In real app, this comes from signed message
+
+            const { renderWidget } = await import('@/lib/widget-renderer');
+            // @ts-ignore
+            return await renderWidget(pin.widget.reactCode, widgetProps);
+        } catch (e) {
+            console.error("Failed to render dynamic widget in OG:", e);
+            // Fallback to default card
         }
     }
 

@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
         const msg = await anthropic.messages.create({
             model: "claude-sonnet-4-5-20250929",
-            max_tokens: 3000,
+            max_tokens: 10000,
             temperature: 0.2, // Lower temperature for consistent code
             system: GENERATION_SYSTEM_PROMPT,
             messages: [
@@ -48,18 +48,32 @@ export async function POST(req: Request) {
 
         const textContent = msg.content[0].text;
 
-        // Clean up markdown code blocks if present
-        const cleanContent = textContent.replace(/```json\n?|```/g, '').trim();
+        // Robustly extract JSON: Find first '{' and last '}'
+        const firstOpen = textContent.indexOf('{');
+        const lastClose = textContent.lastIndexOf('}');
+
+        if (firstOpen === -1 || lastClose === -1) {
+            console.error("No JSON object found in response:", textContent);
+            return NextResponse.json({
+                error: 'Generation incomplete. Please try again.',
+                details: 'The AI response was truncated or invalid.'
+            }, { status: 500 });
+        }
+
+        const cleanContent = textContent.substring(firstOpen, lastClose + 1);
 
         try {
             const result = JSON.parse(cleanContent);
             return NextResponse.json(result);
         } catch (e) {
-            console.error("Failed to parse LLM JSON:", textContent);
-            return NextResponse.json({ error: 'Failed to generate valid JSON' }, { status: 500 });
+            console.error("Failed to parse LLM JSON:", cleanContent);
+            return NextResponse.json({
+                error: 'Failed to parse generated code',
+                details: 'The AI produced invalid JSON. Please try again.'
+            }, { status: 500 });
         }
     } catch (error) {
         console.error('Claude API Error:', error);
-        return NextResponse.json({ error: 'Failed to generate code' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to connect to AI service' }, { status: 500 });
     }
 }

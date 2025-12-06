@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import { useAccount } from "wagmi";
 import { Pin } from "@/types";
-import { Loader2, Wand2, Save, ScanFace } from "lucide-react";
+import { Loader2, Wand2, Save, ScanFace, Play } from "lucide-react";
 import Link from "next/link";
 
 interface EditPinFormProps {
@@ -33,6 +33,7 @@ export default function EditPinForm({ fid, pin }: EditPinFormProps) {
     const [previewData, setPreviewData] = useState<any>({});
     const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
     const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+    const [isLitActionRunning, setIsLitActionRunning] = useState(false);
 
     // AI Generation
     const handleUpdate = async () => {
@@ -93,10 +94,103 @@ export default function EditPinForm({ fid, pin }: EditPinFormProps) {
         }
     };
 
-    const handleSave = () => {
-        // Logic to save the widget (MVP: Alert)
-        alert("Pin Saved (Mock)!");
-        router.push(`/p/${fid}`);
+    const runLitAction = async () => {
+        setIsLitActionRunning(true);
+        try {
+            // Create userParams object from inputs
+            const userParams: any = {};
+            parameters.forEach(p => {
+                userParams[p.name] = previewData[p.name];
+            });
+
+            console.log("Running Lit Action with:", userParams);
+
+            // Proxy Fetch to bypass CORS (Using Local Proxy)
+            const proxiedFetch = async (url: string, options?: RequestInit) => {
+                const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+                try {
+                    const res = await fetch(proxyUrl, options);
+
+                    if (!res.ok) {
+                        const text = await res.text();
+                        console.error(`[Proxy] Request Failed with body:`, text);
+                    }
+                    return res;
+                } catch (e) {
+                    console.error(`[Proxy] Network Error:`, e);
+                    throw e;
+                }
+            };
+
+            // Wrap code in async IIFE
+            // Note: We use 'new Function' to create a sandbox-ish scope
+            // We inject 'proxiedFetch' as 'fetch' to automatically route requests through proxy
+            const executor = new Function('userParams', 'fetch', `
+                return (async () => {
+                    const jsParams = userParams; // Alias for Lit Action compatibility
+                    
+                    // Execute the code
+                    // If it returns a value directly, that's great.
+                    // If it defines a 'main' function (standard Lit pattern), we call it.
+                    try {
+                        ${litActionCode}
+                        
+                        // Check if 'main' was defined and call it if so
+                        // @ts-ignore
+                        if (typeof main !== 'undefined' && typeof main === 'function') {
+                            // @ts-ignore
+                            return await main(jsParams);
+                        }
+                    } catch (e) {
+                         throw e;
+                    }
+                })()
+            `);
+
+            const result = await executor(userParams, proxiedFetch);
+            console.log("Lit Action Result:", result);
+
+            // Re-render preview with REAL data
+            renderPreview(reactCode, result);
+
+        } catch (e: any) {
+            console.error("Lit Action execution failed:", e);
+            alert(`Execution Failed: ${e.message}\n\nCheck console for details (CORS?).`);
+        } finally {
+            setIsLitActionRunning(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!hasGenerated) return;
+
+        try {
+            const savePayload = {
+                widget: {
+                    litActionCode,
+                    reactCode,
+                    parameters,
+                    previewData, // Default mocks
+                    userConfig: previewData, // Saves current inputs as default config
+                }
+            };
+
+            const res = await fetch(`/api/pins/${fid}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(savePayload),
+            });
+
+            if (!res.ok) throw new Error("Failed to save pin");
+
+            // Option: Revalidate/Refresh? For now just redirect
+            router.push(`/p/${fid}`);
+            router.refresh();
+
+        } catch (e) {
+            console.error("Save failed:", e);
+            alert("Failed to save pin. Check console.");
+        }
     };
 
     return (
@@ -145,25 +239,81 @@ export default function EditPinForm({ fid, pin }: EditPinFormProps) {
                             <Card>
                                 <CardHeader>
                                     <CardTitle>Parameters</CardTitle>
-                                    <CardDescription>Test input values for your widget.</CardDescription>
+                                    <CardDescription>Configure your widget settings.</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    {parameters.length === 0 && <p className="text-sm text-muted-foreground">No parameters detected.</p>}
+                                    {parameters.length === 0 && <p className="text-sm text-muted-foreground">No configurable parameters.</p>}
                                     {parameters.map((param, idx) => (
                                         <div key={idx} className="space-y-2">
-                                            <Label>{param.name} <span className="text-xs text-muted-foreground">({param.type})</span></Label>
+                                            <Label>{param.name}</Label>
                                             <Input
                                                 value={previewData[param.name] || ''}
                                                 onChange={(e) => {
                                                     const newData = { ...previewData, [param.name]: e.target.value };
                                                     setPreviewData(newData);
                                                 }}
+                                                placeholder={param.description}
                                             />
                                             <p className="text-xs text-muted-foreground">{param.description}</p>
                                         </div>
                                     ))}
-                                    <Button variant="outline" size="sm" onClick={() => renderPreview(reactCode, previewData)} disabled={isPreviewLoading}>
-                                        {isPreviewLoading ? "Rendering..." : "Refresh Preview"}
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleSave}
+                                        disabled={isPreviewLoading || isLitActionRunning}
+                                        className="w-full bg-slate-900 text-white hover:bg-slate-800"
+                                    >
+                                        <Save className="mr-2 h-4 w-4" /> Save Pin
+                                    </Button>
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Logic Code (Lit Action)</CardTitle>
+                                    <CardDescription>Edit the Javascript code that fetches your data.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Textarea
+                                        value={litActionCode}
+                                        onChange={(e) => setLitActionCode(e.target.value)}
+                                        className="font-mono text-xs min-h-[200px]"
+                                    />
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Actions</CardTitle>
+                                    <CardDescription>Run and refresh your widget.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => runLitAction()}
+                                        disabled={isLitActionRunning}
+                                        className="w-full mt-2 bg-slate-100 hover:bg-slate-200 text-slate-900 border-slate-300"
+                                    >
+                                        {isLitActionRunning ? (
+                                            <><Loader2 className="mr-2 h-3 w-3 animate-spin" /> Running Code...</>
+                                        ) : (
+                                            <><Play className="mr-2 h-3 w-3" /> Run Live Code</>
+                                        )}
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => renderPreview(reactCode, previewData)}
+                                        disabled={isPreviewLoading}
+                                        className="w-full mt-2"
+                                    >
+                                        {isPreviewLoading ? (
+                                            <><Loader2 className="mr-2 h-3 w-3 animate-spin" /> Updating Preview...</>
+                                        ) : (
+                                            "Refresh Preview"
+                                        )}
                                     </Button>
                                 </CardContent>
                             </Card>

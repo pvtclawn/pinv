@@ -23,6 +23,14 @@ export interface Pin {
     followerCount?: number;
   };
   widgets: Widget[];
+  // Defines the single "Hero Widget" for this pin
+  widget?: {
+    litActionCode: string;
+    reactCode: string;
+    parameters: any[];
+    previewData: any;
+    userConfig?: Record<string, string>; // Saved parameter values
+  };
 }
 
 export interface MiniAppEmbed {
