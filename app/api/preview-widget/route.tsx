@@ -102,7 +102,9 @@ export async function POST(req: NextRequest) {
           padding: 40
         }}>
           <div style={{ fontSize: 40, fontWeight: 'bold', marginBottom: 20 }}>Render Error</div>
-          <div style={{ fontSize: 24, textAlign: 'center' }}>{e.message}</div>
+          <div style={{ fontSize: 24, textAlign: 'center' }}>
+            {e instanceof Error ? e.message : String(e)}
+          </div>
         </div>
       ),
       { width: 1200, height: 800 }
