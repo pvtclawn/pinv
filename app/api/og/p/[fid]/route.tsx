@@ -7,53 +7,56 @@ export async function GET(
     request: Request,
     { params }: { params: Promise<{ fid: string }> }
 ) {
+    const { searchParams } = new URL(request.url);
+    const hasPreviewParams = searchParams.has('title') || searchParams.has('handle');
+
     const { fid: fidStr } = await params;
     const fid = parseInt(fidStr);
-    const pin = await blockchainService.getPin(fid);
 
-    if (!pin) {
-        return new ImageResponse(
-            (
-                <div
-                    style={{
-                        fontSize: 40,
-                        color: 'white',
-                        background: 'black',
-                        width: '100%',
-                        height: '100%',
-                        display: 'flex',
-                        textAlign: 'center',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    Pin not found
-                </div>
-            ),
-            {
-                width: 1200,
-                height: 630,
+    // Default pin data
+    let pin = await blockchainService.getPin(fid) || {
+        title: 'Pin Not Found',
+        tagline: '',
+        handle: 'unknown',
+        accentColor: '#000000',
+        stats: { githubRepos: 0, githubStars: 0, followerCount: 0 },
+        widgets: [],
+        lastUpdated: new Date().toISOString()
+    };
+
+    // Override with Query Params for Preview
+    if (hasPreviewParams) {
+        pin = {
+            ...pin,
+            title: searchParams.get('title') || pin.title,
+            tagline: searchParams.get('tagline') || pin.tagline,
+            handle: searchParams.get('handle') || pin.handle,
+            accentColor: searchParams.get('accentColor') ? `#${searchParams.get('accentColor')}` : pin.accentColor,
+            stats: {
+                githubRepos: parseInt(searchParams.get('repos') ?? '0') || pin.stats.githubRepos || 0,
+                githubStars: parseInt(searchParams.get('stars') ?? '0') || pin.stats.githubStars || 0,
+                followerCount: parseInt(searchParams.get('followers') ?? '0') || pin.stats.followerCount || 0,
             }
-        );
-    }
-
-    // FETCH REAL DATA for the preview (MVP: Hardcoded for guy-do-or-die demo)
-    try {
-        const res = await fetch('https://api.github.com/users/guy-do-or-die', {
-            headers: { 'User-Agent': 'PinV' }
-        });
-        if (res.ok) {
-            const githubUser = await res.json();
-            pin.stats = {
-                githubRepos: githubUser.public_repos,
-                githubStars: 120, // Stars require iterating all repos, mocking for speed
-                followerCount: githubUser.followers,
-            };
-            pin.handle = githubUser.login; // Use real handle too
-            pin.tagline = githubUser.bio || pin.tagline; // Use real bio
+        };
+    } else if (pin.handle === 'guy-do-or-die' && !pin.stats.githubStars) {
+        // FETCH REAL DATA only if not previewing and it's our demo user
+        try {
+            const res = await fetch('https://api.github.com/users/guy-do-or-die', {
+                headers: { 'User-Agent': 'PinV' }
+            });
+            if (res.ok) {
+                const githubUser = await res.json();
+                pin.stats = {
+                    githubRepos: githubUser.public_repos,
+                    githubStars: 120,
+                    followerCount: githubUser.followers,
+                };
+                pin.handle = githubUser.login;
+                pin.tagline = githubUser.bio || pin.tagline;
+            }
+        } catch (e) {
+            console.error('Failed to fetch GitHub data for OG image', e);
         }
-    } catch (e) {
-        console.error('Failed to fetch GitHub data for OG image', e);
     }
 
     return new ImageResponse(
