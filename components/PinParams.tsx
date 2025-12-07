@@ -1,29 +1,31 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import ShareButton from "@/components/ShareButton";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-interface Parameter {
+export interface ParameterDefinition {
     name: string;
     description?: string;
-    type?: string;
+    type?: "user_setting" | "dynamic_context" | string;
 }
 
 interface PinParamsProps {
-    parameters: Parameter[];
+    parameters: ParameterDefinition[];
     mode: 'view' | 'edit';
-    // For Controlled Mode (Edit)
     values?: Record<string, string>;
     onChange?: (values: Record<string, string>) => void;
-    // For View Mode
     baseUrl?: string;
     initialValues?: Record<string, string>;
     className?: string;
+    disabled?: boolean;
 }
 
+/**
+ * PinParams - Unified component for displaying and editing pin parameters.
+ * Handles both the "view" mode (Share button) and "edit" mode (Inputs).
+ */
 export default function PinParams({
     parameters,
     mode,
@@ -31,24 +33,19 @@ export default function PinParams({
     initialValues,
     onChange,
     baseUrl,
-    className
+    className,
+    disabled = false
 }: PinParamsProps) {
-    const [internalValues, setInternalValues] = useState<Record<string, string>>(initialValues || {});
-
-    // In 'edit' mode, use externalValues (Controlled). In 'view' mode, use internalValues (Uncontrolled with initial).
-    const values = mode === 'edit' ? (externalValues || {}) : internalValues;
+    // In edit mode, use controlled values
+    const values = mode === 'edit' ? (externalValues || {}) : (initialValues || {});
 
     const handleChange = (name: string, value: string) => {
-        const newValues = { ...values, [name]: value };
-
         if (mode === 'edit' && onChange) {
-            onChange(newValues);
-        } else {
-            setInternalValues(newValues);
+            onChange({ ...values, [name]: value });
         }
     };
 
-    // Construct the dynamic URL for View mode
+    // Build share URL for view mode
     const getShareUrl = () => {
         if (!baseUrl) return '';
         const url = new URL(baseUrl);
@@ -67,16 +64,10 @@ export default function PinParams({
 
     return (
         <div className={cn("space-y-6 w-full", className)}>
-            <div className={cn("grid gap-4", mode === 'view' ? "p-4 border rounded-lg bg-muted/20" : "")}>
-                {mode === 'view' && (
-                    <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
-                        Customize View
-                    </h3>
-                )}
-
+            <div className={cn("grid gap-4", mode === 'view' ? "p-4 border rounded-none bg-muted/20" : "")}>
                 {parameters.map((param) => (
                     <div key={param.name} className="space-y-2">
-                        <Label htmlFor={param.name} className={mode === 'view' ? "text-xs uppercase opacity-70" : ""}>
+                        <Label htmlFor={param.name}>
                             {param.name}
                         </Label>
                         <Input
@@ -85,9 +76,12 @@ export default function PinParams({
                             value={values[param.name] || ""}
                             onChange={(e) => handleChange(param.name, e.target.value)}
                             className="bg-background"
+                            disabled={disabled || (mode === 'view' && !onChange)}
                         />
-                        {mode === 'edit' && param.description && (
-                            <p className="text-xs text-muted-foreground">{param.description}</p>
+                        {param.description && (
+                            <p className="text-xs text-muted-foreground">
+                                {param.description}
+                            </p>
                         )}
                     </div>
                 ))}

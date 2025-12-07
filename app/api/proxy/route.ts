@@ -7,30 +7,47 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'Missing URL parameter' }, { status: 400 });
     }
 
-    // TODO: SECURITY: For production, we should implement a domain whitelist
-    // to prevent SSRF attacks. e.g. only allow api.github.com, api.coingecko.com, etc.
-    // or rate limit the IP address.
-
     try {
         console.log(`[LocalProxy] Fetching: ${url}`);
-        const response = await fetch(url, {
-            headers: {
-                // Determine if we need to pass specific headers?
-                // For MVP, we strip most to avoid issues, or pass a minimal set.
-                'User-Agent': 'PinV-Proxy/1.0',
-                'Accept': 'application/json, text/plain, */*',
+
+        // Forward headers from the client request
+        const headers = new Headers();
+        req.headers.forEach((value, key) => {
+            // Filter out headers that could cause issues or are managed by the fetch API/browser
+            if (!['host', 'connection', 'content-length', 'transfer-encoding', 'cookie'].includes(key.toLowerCase())) {
+                headers.set(key, value);
             }
         });
 
-        const data = await response.arrayBuffer(); // Get raw data to support images etc if needed
+        // Ensure we identify as a proxy but keep original intent
+        headers.set('User-Agent', req.headers.get('User-Agent') || 'PinV-Proxy/1.0');
+
+        const response = await fetch(url, {
+            headers: headers,
+            cache: 'no-store' // Prevent caching proxy responses by default
+        });
+
+        const data = await response.arrayBuffer();
+
+        // Forward response headers
+        const responseHeaders = new Headers();
+        response.headers.forEach((value, key) => {
+            // Filter potentially problematic response headers
+            if (!['content-encoding', 'content-length', 'transfer-encoding'].includes(key.toLowerCase())) {
+                responseHeaders.set(key, value);
+            }
+        });
+
+        // Ensure CORS and Content-Type
+        responseHeaders.set('Access-Control-Allow-Origin', '*');
+        if (!responseHeaders.has('Content-Type')) {
+            responseHeaders.set('Content-Type', 'application/octet-stream');
+        }
 
         return new NextResponse(data, {
             status: response.status,
             statusText: response.statusText,
-            headers: {
-                'Content-Type': response.headers.get('Content-Type') || 'application/octet-stream',
-                'Access-Control-Allow-Origin': '*', // Allow client to read this
-            }
+            headers: responseHeaders
         });
 
     } catch (e: any) {

@@ -3,8 +3,6 @@ import { Metadata, ResolvingMetadata } from 'next';
 import { blockchainService } from '@/lib/blockchain-service';
 import Header from '@/components/Header';
 import { NEXT_PUBLIC_APP_URL } from '@/lib/config';
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import PinViewer from "@/components/PinViewer";
 
 type Props = {
@@ -107,10 +105,12 @@ export default async function PinPage({ params, searchParams }: Props) {
     }
 
     return (
-        <div className="min-h-screen bg-background p-8">
-            <div className="max-w-2xl mx-auto space-y-8">
+        <div className="min-h-screen bg-background pattern-grid">
+            <div className="app-container">
                 <Header />
-                <PinViewer pin={pin} fid={fid} initialParams={initialParams} />
+                <main className="mt-8 md:mt-12">
+                    <PinViewer pin={pin} fid={fid} initialParams={initialParams} />
+                </main>
             </div>
         </div>
     );

@@ -1,11 +1,8 @@
-import { NEXT_PUBLIC_APP_URL } from '@/lib/config';
+import { NEXT_PUBLIC_APP_URL, APP_CONFIG } from '@/lib/config';
 
 export async function GET() {
     const appUrl = NEXT_PUBLIC_APP_URL;
 
-    // Signatures are now provided by environment variables
-    // Local: .env.local
-    // Production: Vercel Environment Variables
     const accountAssociation = {
         header: process.env.FARCASTER_ASSOCIATION_HEADER || '',
         payload: process.env.FARCASTER_ASSOCIATION_PAYLOAD || '',
@@ -16,21 +13,24 @@ export async function GET() {
         accountAssociation: accountAssociation,
         frame: {
             version: "1",
-            name: "PinV",
+            name: APP_CONFIG.title,
             homeUrl: appUrl,
-            iconUrl: `${appUrl}/icon.svg`,
-            splashImageUrl: `${appUrl}/logo.svg`,
+            iconUrl: APP_CONFIG.iconUrl,
+            splashImageUrl: APP_CONFIG.iconUrl,
             splashBackgroundColor: "#0052FF",
             webhookUrl: `${appUrl}/api/webhook`,
-            subtitle: "Pinned casts dynamic view",
-            description: "Pinned casts dynamic view – manage your pinned content with ease",
+            subtitle: APP_CONFIG.subtitle,
+            description: APP_CONFIG.description,
             primaryCategory: "social",
             tags: [
                 "farcaster",
                 "pins",
                 "social"
             ],
-            tagline: "Pinned casts dynamic view"
+            tagline: APP_CONFIG.tagline
+        },
+        baseBuilder: {
+            ownerAddress: "0x906754F840Fc07676Ac9b20556a05d7200B6dE49"
         }
     };
 

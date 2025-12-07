@@ -25,20 +25,20 @@ export default function PinDisplayCard({
     ...props
 }: PinDisplayCardProps) {
     return (
-        <Card className={cn("h-full flex flex-col shadow-lg", className)} {...props}>
-            <CardHeader className="text-center md:text-left bg-muted/5 border-b">
-                <CardTitle className="text-xl md:text-2xl">{title}</CardTitle>
+        <Card className={cn("h-full flex flex-col shadow-lg rounded-none", className)} {...props}>
+            <CardHeader className="text-center md:text-left bg-muted/10 border-b p-4">
+                <CardTitle className="text-xl md:text-2xl font-bold font-sans">{title}</CardTitle>
                 <CardDescription className="text-sm md:text-base">{description}</CardDescription>
             </CardHeader>
 
-            <CardContent className="flex-1 p-0 relative min-h-[400px] flex items-center justify-center bg-muted/10">
+            <CardContent className="flex-1 p-0 relative min-h-[200px] flex items-center justify-center bg-muted/10">
                 {/* Image Container */}
-                <div className="w-full h-full flex items-center justify-center p-4">
+                <div className="w-full h-full flex items-center justify-center">
                     {imageSrc ? (
                         <img
                             src={imageSrc}
                             alt="Pin Preview"
-                            className="max-w-full max-h-[600px] object-contain shadow-md rounded-md"
+                            className="max-w-full max-h-[600px] object-contain shadow-md rounded-none"
                         />
                     ) : (
                         <div className="text-center text-muted-foreground flex flex-col items-center gap-2">
@@ -57,7 +57,7 @@ export default function PinDisplayCard({
             </CardContent>
 
             {(children) && (
-                <CardFooter className="flex flex-col gap-4 border-t bg-muted/5 p-6 md:p-8">
+                <CardFooter className="flex flex-col gap-4 border-t bg-muted/5 p-4 md:p-6">
                     {children}
                 </CardFooter>
             )}

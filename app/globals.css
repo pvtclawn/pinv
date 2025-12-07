@@ -3,26 +3,68 @@
 @plugin "tailwindcss-animate";
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 221.2 83.2% 53.3%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 47.4% 11.2%;
+  /* Hybrid Origami Palette */
+
+  /* Light UI Surface */
+  --ui-bg: 228 14% 97%;
+  /* #F6F7FA */
+  --ui-panel: 0 0% 100%;
+  /* #FFFFFF */
+  --ui-border: 220 17% 91%;
+  /* #E3E6ED */
+
+  /* Brand Accents */
+  --brand-blue: 240 100% 50%;
+  /* #0000FF - Pure Blue */
+  --brand-highlight: 231 100% 68%;
+  /* #5D75FF */
+
+  /* Text */
+  --text-main: 231 15% 8%;
+  /* #111218 */
+  --text-secondary: 227 9% 40%;
+  /* #5E6270 */
+
+  /* Dark Data Enclave (The "Tech" Layer) */
+  --data-bg: 225 38% 6%;
+  /* #0A0D16 */
+  --data-line: 225 28% 14%;
+  /* #1A1F2E */
+  --data-glow: 190 100% 65%;
+  /* #4FE3FF */
+
+  /* Mappings */
+  --background: var(--ui-bg);
+  --foreground: var(--text-main);
+
+  --card: var(--ui-panel);
+  --card-foreground: var(--text-main);
+
+  --popover: var(--ui-panel);
+  --popover-foreground: var(--text-main);
+
+  --primary: var(--brand-blue);
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: var(--ui-bg);
+  --secondary-foreground: var(--text-secondary);
+
+  --muted: var(--ui-bg);
+  --muted-foreground: var(--text-secondary);
+
+  --accent: 240 100% 98%;
+  /* Light blue tint */
+  --accent-foreground: var(--brand-blue);
+
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 221.2 83.2% 53.3%;
-  --radius: 0.5rem;
+
+  --border: var(--ui-border);
+  --input: var(--ui-border);
+  --ring: var(--brand-blue);
+
+  --radius: 0rem;
+  /* Geometric / Sharp */
 }
 
 @theme inline {
@@ -45,34 +87,14 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
-  
+
+  --color-data-bg: hsl(var(--data-bg));
+  --color-data-line: hsl(var(--data-line));
+  --color-data-glow: hsl(var(--data-glow));
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-orbitron: var(--font-orbitron);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-  }
 }
 
 body {
@@ -81,3 +103,143 @@ body {
   font-family: var(--font-sans);
 }
 
+/* ========================================
+   Custom Scrollbar (Minimal / Overlay)
+   ======================================== */
+@layer base {
+  html {
+    overflow-y: overlay;
+    /* WebKit compatible overlay */
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+    background: transparent;
+    /* Track is strictly transparent */
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0);
+    /* Hidden by default */
+    border-radius: 10px;
+    transition: background 0.2s;
+  }
+
+  /* Show thumb when hovering the window/scrollable area */
+  html:hover ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* ========================================
+   Global Layout
+   ======================================== */
+.app-container {
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+  z-index: 10;
+  padding: 0;
+}
+
+@media (min-width: 768px) {
+  .app-container {
+    padding: 1.5rem;
+    /* p-6 */
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-container {
+    padding: 2rem;
+    /* p-8 */
+  }
+}
+
+/* ========================================
+   Hybrid Origami Utilities
+   ======================================== */
+
+/* Origami Card: Physical Relief */
+.origami-card {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.05);
+  /* Slight Physical Relief */
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.4, 1);
+}
+
+@media (hover: hover) {
+  .origami-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    /* Lift Effect */
+    border-color: hsl(var(--primary));
+  }
+}
+
+/* Data Enclave: The "Hole" in the paper */
+.data-enclave {
+  background-color: hsl(var(--data-bg));
+  color: white;
+  position: relative;
+  /* Inner shadow to show it's "inside" the paper */
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Origami Fold Effect (CSS Triangle) */
+
+
+.fold-corner {
+  clip-path: polygon(0 0,
+      100% 0,
+      100% calc(100% - 16px),
+      calc(100% - 16px) 100%,
+      0 100%);
+}
+
+/* Tessellation Pattern BG */
+.pattern-grid {
+  position: relative;
+  background-color: var(--color-background);
+}
+
+.pattern-grid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(60deg, #D4D8E2 1px, transparent 1px),
+    linear-gradient(-60deg, #D4D8E2 1px, transparent 1px);
+  background-size: 40px 69.28px;
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Typography Overrides */
+h1,
+h2,
+h3,
+h4,
+.brand-font {
+  font-family: var(--font-orbitron);
+  letter-spacing: -0.02em;
+}
+
+code,
+.code-font {
+  font-family: var(--font-mono);
+}

@@ -23,14 +23,15 @@ export async function renderWidget(code: string, props: any, options?: any): Pro
         // Satori Patch: Automatically inject display: 'flex' for divs to prevent crashes
         // @ts-ignore
         proxiedReact.createElement = (type, props, ...children) => {
-            if (type === 'div' && props && (!props.style || !props.style.display)) {
-                props = {
-                    ...props,
-                    style: {
-                        ...(props.style || {}),
-                        display: 'flex'
-                    }
-                };
+            if (type === 'div' && props) {
+                const newStyle = { ...(props.style || {}) };
+                if (!newStyle.display) {
+                    newStyle.display = 'flex';
+                }
+                if (newStyle.zIndex && typeof newStyle.zIndex === 'string' && newStyle.zIndex.endsWith('px')) {
+                    newStyle.zIndex = parseInt(newStyle.zIndex, 10);
+                }
+                props = { ...props, style: newStyle };
             }
             return React.createElement(type, props, ...children);
         };

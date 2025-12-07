@@ -18,9 +18,51 @@ const orbitron = localFont({
   variable: "--font-orbitron",
 });
 
+import { NEXT_PUBLIC_APP_URL, APP_CONFIG } from '@/lib/config';
+
 export const metadata: Metadata = {
-  title: "PinV",
-  description: "Dynamic pinned casts",
+  title: APP_CONFIG.defaultTitle,
+  description: APP_CONFIG.description,
+  icons: {
+    icon: '/icon.png',
+    shortcut: '/icon.png',
+    apple: '/icon.png',
+  },
+  openGraph: {
+    title: APP_CONFIG.title,
+    description: APP_CONFIG.description,
+    images: [`${NEXT_PUBLIC_APP_URL}/icon.png`],
+  },
+  other: {
+    'fc:miniapp': JSON.stringify({
+      version: '1',
+      imageUrl: APP_CONFIG.iconUrl,
+      button: {
+        title: `Launch ${APP_CONFIG.title}`,
+        action: {
+          type: 'launch_miniapp',
+          name: APP_CONFIG.title,
+          url: NEXT_PUBLIC_APP_URL,
+          splashImageUrl: APP_CONFIG.iconUrl,
+          splashBackgroundColor: '#F6F7FA',
+        },
+      },
+    }),
+    'fc:frame': JSON.stringify({
+      version: '1',
+      imageUrl: APP_CONFIG.iconUrl,
+      button: {
+        title: `Launch ${APP_CONFIG.title}`,
+        action: {
+          type: 'launch_frame',
+          name: APP_CONFIG.title,
+          url: NEXT_PUBLIC_APP_URL,
+          splashImageUrl: APP_CONFIG.iconUrl,
+          splashBackgroundColor: '#F6F7FA',
+        },
+      },
+    }),
+  },
 };
 
 import MiniappProvider from "@/components/MiniappProvider";
@@ -32,7 +74,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${orbitron.variable} antialiased`}
       >

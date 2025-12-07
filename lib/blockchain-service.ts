@@ -4,11 +4,18 @@ import fs from 'fs/promises';
 import path from 'path';
 import { createClient, VercelKV } from '@vercel/kv';
 
-// INTERFACES
-interface PinStorage {
+/**
+ * Storage interface for Pin data persistence.
+ * Implementations: FileStorage (local dev), KVStorage (production)
+ */
+export interface PinStorage {
+    /** Retrieve all pins from storage */
     getAllPins(): Promise<Pin[]>;
+    /** Get a single pin by FID, returns null if not found */
     getPin(fid: number): Promise<Pin | null>;
+    /** Create a new pin, returns the generated FID */
     createPin(pin: Omit<Pin, 'fid'>): Promise<number>;
+    /** Update an existing pin, returns transaction hash */
     updatePin(fid: number, updates: Partial<Pin>): Promise<string>;
 }
 

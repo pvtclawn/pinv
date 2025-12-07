@@ -200,7 +200,7 @@ export async function GET(
             width: 1200,
             height: 800,
             headers: {
-                'Cache-Control': 'public, immutable, no-transform, max-age=300',
+                'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=600',
             },
         }
     );

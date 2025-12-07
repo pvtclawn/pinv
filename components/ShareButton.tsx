@@ -32,7 +32,7 @@ export default function ShareButton({ url }: ShareButtonProps) {
             className="flex-1 bg-white text-black hover:bg-white/90 font-bold"
         >
             <Share2 className="w-4 h-4 mr-2" />
-            Share my PinV
+            Share
         </Button>
     );
 }
