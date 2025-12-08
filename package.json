@@ -41,5 +41,10 @@
     "eslint-config-next": "16.0.7",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "use-sync-external-store": {
+      "react": "$react"
+    }
   }
 }
