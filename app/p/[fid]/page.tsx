@@ -108,7 +108,7 @@ export default async function PinPage({ params, searchParams }: Props) {
         <div className="min-h-screen bg-background pattern-grid">
             <div className="app-container">
                 <Header />
-                <main className="mt-8 md:mt-12">
+                <main className="mt-8 md:mt-12 w-full max-w-2xl mx-auto">
                     <PinViewer pin={pin} fid={fid} initialParams={initialParams} />
                 </main>
             </div>

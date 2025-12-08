@@ -10,6 +10,7 @@ const IFRAME_TEMPLATE = `
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { margin: 0; padding: 0; background: transparent; color: white; font-family: sans-serif; overflow: hidden; }
@@ -20,23 +21,65 @@ const IFRAME_TEMPLATE = `
 <body>
   <div id="root"></div>
   <script type="text/babel">
+    // --- Lucide React Shim ---
+    // Converts window.lucide.icons (vanilla JS definitions) into React components
+    window.LucideReact = {};
+    if (window.lucide && window.lucide.icons) {
+      Object.keys(window.lucide.icons).forEach(iconName => {
+        const iconDef = window.lucide.icons[iconName];
+        // iconDef usually: [ tag, attrs, children ] (if new format) OR logic from createElement
+        // Actually lucide version varies. Let's assume standard behavior or fallback.
+        // Lucide 0.x exports object of params.
+        
+        window.LucideReact[iconName] = (props) => {
+          const { color = "currentColor", size = 24, strokeWidth = 2, children, ...rest } = props;
+          
+          // Basic SVG wrapper matching Lucide defaults
+          return React.createElement('svg', {
+            xmlns: "http://www.w3.org/2000/svg",
+            width: size,
+            height: size,
+            viewBox: "0 0 24 24",
+            fill: "none",
+            stroke: color,
+            strokeWidth: strokeWidth,
+            strokeLinecap: "round",
+            strokeLinejoin: "round",
+            ...rest,
+            // Render children (paths) from iconDef if available. 
+            // NOTE: Parsing the exact lucide definition structure here safely is complex.
+            // For robustness, we will try to use the 'lucide.createIcons' logic OR 
+            // just render a placeholder if parsing fails.
+            //
+            // BETTER: Use 'dangerouslySetInnerHTML' if we can get the SVG string? No.
+            //
+            // Hack for MVP: Render the generic Lucide structure if it's an array.
+            // [tag, attrs, children]
+            
+          }, (Array.isArray(iconDef) ? iconDef : []).map(([tag, attrs, subChildren], i) => 
+             React.createElement(tag, { ...attrs, key: i })
+          ));
+        };
+        // Add PascalCase alias if key is mixed (Lucide keys are usually PascalCase already)
+      });
+    }
+
+    // --- Main Executor ---
     window.addEventListener('message', (event) => {
       const { code } = event.data;
       if (!code) return;
 
       try {
-        // Robust way to get the exported component:
-        // Replace 'export default' with 'return'
-        // This works for:
-        // - export default function Foo() {} -> return function Foo() {}
-        // - export default () => {} -> return () => {}
-        // - const Foo = ...; export default Foo; -> const Foo = ...; return Foo;
-        
-        // Robust way to get the exported component:
         let cleanCode = code;
-        if (code.includes('export default')) {
-          cleanCode = code.replace(/export\s+default\s+(function\s+\w+|class\s+\w+|const\s+\w+|async\s+function\s+\w+|function\()*?/, 'return $1');
-          // Handle simpler cases like "export default App;" -> "return App;" at the end
+        
+        // 1. Shim Imports
+        // Replace "import { X, Y } from 'lucide-react'" with "const { X, Y } = window.LucideReact"
+        // Regex handles newlines and spaces roughly
+        cleanCode = cleanCode.replace(/import\s+\{([^}]+)\}\s+from\s+['"]lucide-react['"];?/g, 'const { $1 } = window.LucideReact || {};');
+
+        // 2. Extract Return Statement
+        if (cleanCode.includes('export default')) {
+          cleanCode = cleanCode.replace(/export\s+default\s+(function\s+\w+|class\s+\w+|const\s+\w+|async\s+function\s+\w+|function\()*?/, 'return $1');
           cleanCode = cleanCode.replace(/export\s+default\s+([a-zA-Z0-9_]+);?/, 'return $1;');
         }
         
@@ -59,7 +102,8 @@ const IFRAME_TEMPLATE = `
         resizeObserver.observe(document.body);
 
       } catch (err) {
-        document.getElementById('root').innerHTML = '<div class="text-red-500 p-4">Error: ' + err.message + '</div>';
+        console.error("Sandbox Error:", err);
+        document.getElementById('root').innerHTML = '<div class="text-red-500 p-4 font-mono text-sm">Runtime Error: ' + err.message + '</div>';
       }
     });
   </script>

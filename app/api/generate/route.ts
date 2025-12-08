@@ -1,69 +1,47 @@
 import { NextResponse } from 'next/server';
 import { GENERATION_SYSTEM_PROMPT } from '@/lib/prompts';
+import { NEXT_PUBLIC_APP_URL } from '@/lib/config';
 
 async function generateText(
-    provider: 'anthropic' | 'google',
     model: string,
     systemPrompt: string,
     userPrompt: string,
     apiKey: string
 ): Promise<string> {
-    if (provider === 'google') {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-goog-api-key': apiKey
-            },
-            body: JSON.stringify({
-                system_instruction: {
-                    parts: [{ text: systemPrompt }]
-                },
-                contents: [{
-                    parts: [{ text: userPrompt }]
-                }],
-                generationConfig: {
-                    temperature: 1.0,
-                    response_mime_type: "application/json"
-                }
-            })
-        });
+    const url = 'https://openrouter.ai/api/v1/chat/completions';
 
-        if (!response.ok) {
-            const err = await response.text();
-            throw new Error(`Gemini API Error: ${response.status} ${response.statusText} - ${err}`);
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'HTTP-Referer': NEXT_PUBLIC_APP_URL, // Optional, for including your app on openrouter.ai rankings.
+            'X-Title': 'PinV', // Optional. Shows in rankings on openrouter.ai.
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            model: model,
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+            ],
+            max_tokens: 10000,
+            temperature: 1.0,
+            response_format: { type: "json_object" } // Prefer JSON mode if supported
+        })
+    });
+
+    if (!response.ok) {
+        let errText = '';
+        try {
+            errText = await response.text();
+        } catch (e) {
+            errText = response.statusText;
         }
-
-        const data = await response.json();
-        return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    } else {
-        // Anthropic
-        const url = 'https://api.anthropic.com/v1/messages';
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01',
-                'content-type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: model,
-                max_tokens: 4096,
-                temperature: 1.0,
-                system: systemPrompt,
-                messages: [{ role: 'user', content: userPrompt }]
-            })
-        });
-
-        if (!response.ok) {
-            const err = await response.text();
-            throw new Error(`Anthropic API Error: ${response.status} ${response.statusText} - ${err}`);
-        }
-
-        const data = await response.json();
-        return data.content?.[0]?.text || '';
+        throw new Error(`OpenRouter API Error: ${response.status} ${response.statusText} - ${errText}`);
     }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || '';
 }
 
 export async function POST(req: Request) {
@@ -81,37 +59,24 @@ export async function POST(req: Request) {
             ${JSON.stringify(contextParams, null, 2)}
         `;
 
-        // Determine Provider and Model
-        let provider: 'anthropic' | 'google' = 'anthropic';
-        let model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5-20250929";
-        let apiKey = process.env.ANTHROPIC_API_KEY;
-
-        const llmModel = process.env.LLM_MODEL;
-        const geminiKey = process.env.GEMINI_API_KEY;
-
-        if (llmModel && llmModel.toLowerCase().startsWith('gemini')) {
-            provider = 'google';
-            model = llmModel;
-            apiKey = geminiKey;
-        } else if (!process.env.ANTHROPIC_API_KEY && geminiKey) {
-            // Fallback if no Anthropic key but Gemini key exists
-            provider = 'google';
-            model = llmModel || 'gemini-1.5-pro-latest';
-            apiKey = geminiKey;
-        }
+        // Default to Claude 3.5 Sonnet if not specified
+        const model = process.env.LLM_MODEL || "anthropic/claude-3.5-sonnet";
+        const apiKey = process.env.OPENROUTER_API_KEY;
 
         if (!apiKey) {
-            return NextResponse.json({ error: `${provider.toUpperCase()}_API_KEY not set` }, { status: 500 });
+            // Fallback to legacy keys if OpenRouter key is missing (backward compatibility)
+            // But for this task, we strongly assume user added OPENROUTER_API_KEY
+            // We'll throw specific error to prompt user if it's missing.
+            return NextResponse.json({ error: 'OPENROUTER_API_KEY not set' }, { status: 500 });
         }
 
         console.log("----------------------------------------------------------------");
         console.log("[Generate Debug] System Prompt:", GENERATION_SYSTEM_PROMPT);
         console.log("[Generate Debug] User Content:", userContent);
-        console.log("[Generate Debug] Provider:", provider);
         console.log("[Generate Debug] Model:", model);
         console.log("----------------------------------------------------------------");
 
-        const textContent = await generateText(provider, model, GENERATION_SYSTEM_PROMPT, userContent, apiKey);
+        const textContent = await generateText(model, GENERATION_SYSTEM_PROMPT, userContent, apiKey);
 
         // Robustly extract JSON: Find first '{' and last '}'
         const firstOpen = textContent.indexOf('{');

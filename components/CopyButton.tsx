@@ -1,43 +1,72 @@
 "use client";
 
 import { useState } from "react";
+import { AppButton } from "@/components/ui/AppButton";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-interface CopyButtonProps {
+interface CopyButtonProps extends Omit<React.ComponentProps<typeof AppButton>, "onClick"> {
     url: string;
+    iconOnly?: boolean;
+    unstyled?: boolean;
 }
 
-export default function CopyButton({ url }: CopyButtonProps) {
+export default function CopyButton({ url, className, children, iconOnly = false, unstyled = false, ...props }: CopyButtonProps) {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = async () => {
+        let success = false;
         try {
-            await navigator.clipboard.writeText(url);
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(url);
+                success = true;
+            } else {
+                throw new Error("Clipboard API unavailable");
+            }
+        } catch (err) {
+            // Fallback for older browsers or non-secure contexts
+            try {
+                const textArea = document.createElement("textarea");
+                textArea.value = url;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-9999px";
+                textArea.style.top = "0";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                success = document.execCommand('copy');
+                document.body.removeChild(textArea);
+            } catch (fallbackErr) {
+                console.error("Failed to copy:", fallbackErr);
+            }
+        }
+
+        if (success) {
             setCopied(true);
-            setTimeout(() => setCopied(false), 2000); // Reset after 2s
-        } catch (error) {
-            console.error("Failed to copy:", error);
+            setTimeout(() => setCopied(false), 2000);
         }
     };
 
+    const Comp = (unstyled ? Button : AppButton) as React.ElementType;
+
     return (
-        <Button
+        <Comp
             onClick={handleCopy}
-            variant="secondary"
-            className="bg-[#111218] hover:bg-[#111218]/90 text-white border border-white/10 font-bold min-w-[120px]"
+            className={className}
+            {...props}
         >
             {copied ? (
                 <>
-                    <Check className="w-4 h-4 mr-2 text-green-500" />
-                    Copied
+                    <Check className={cn("w-4 h-4 text-green-500", !iconOnly && "mr-2")} />
+                    {!iconOnly && "Copied"}
                 </>
             ) : (
                 <>
-                    <Copy className="w-4 h-4 mr-2" />
-                    Copy Link
+                    <Copy className={cn("w-4 h-4", !iconOnly && "mr-2")} />
+                    {!iconOnly && (children || "Copy Link")}
                 </>
             )}
-        </Button>
+        </Comp>
     );
 }

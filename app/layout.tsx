@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   },
   other: {
     'fc:miniapp': JSON.stringify({
-      version: '1',
+      version: 'next',
       imageUrl: APP_CONFIG.iconUrl,
       button: {
         title: `Launch ${APP_CONFIG.title}`,
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
           name: APP_CONFIG.title,
           url: NEXT_PUBLIC_APP_URL,
           splashImageUrl: APP_CONFIG.iconUrl,
-          splashBackgroundColor: '#F6F7FA',
+          splashBackgroundColor: APP_CONFIG.splashBackgroundColor,
         },
       },
     }),
@@ -58,7 +58,7 @@ export const metadata: Metadata = {
           name: APP_CONFIG.title,
           url: NEXT_PUBLIC_APP_URL,
           splashImageUrl: APP_CONFIG.iconUrl,
-          splashBackgroundColor: '#F6F7FA',
+          splashBackgroundColor: APP_CONFIG.splashBackgroundColor,
         },
       },
     }),

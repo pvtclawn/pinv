@@ -67,12 +67,12 @@ export default function PinParams({
             <div className={cn("grid gap-4", mode === 'view' ? "p-4 border rounded-none bg-muted/20" : "")}>
                 {parameters.map((param) => (
                     <div key={param.name} className="space-y-2">
-                        <Label htmlFor={param.name}>
+                        <Label htmlFor={param.name} className="sr-only">
                             {param.name}
                         </Label>
                         <Input
                             id={param.name}
-                            placeholder={param.description || `Enter ${param.name}...`}
+                            placeholder={param.name}
                             value={values[param.name] || ""}
                             onChange={(e) => handleChange(param.name, e.target.value)}
                             className="bg-background"

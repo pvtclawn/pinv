@@ -16,20 +16,23 @@ export default function Hero({ isLoading = false }: HeroProps) {
             </h1>
 
             <p className="text-lg md:text-2xl text-muted-foreground max-w-[700px] leading-relaxed font-sans font-medium">
-                Earn from dynamic content <br /> on{" "}
-                <Link
-                    href="https://farcaster.xyz"
-                    className="text-foreground hover:text-primary transition-colors underline decoration-primary/50 underline-offset-4"
-                >
-                    Farcaster
-                </Link>{" "}
-                and{" "}
-                <Link
-                    href="https://join.base.app"
-                    className="text-foreground hover:text-primary transition-colors underline decoration-primary/50 underline-offset-4"
-                >
-                    Base App
-                </Link>
+                Earn from personalized live content{' '}
+                <span className="whitespace-nowrap">
+                    on{' '}
+                    <Link
+                        href="https://farcaster.xyz"
+                        className="text-foreground hover:text-primary transition-colors underline decoration-primary/50 underline-offset-4"
+                    >
+                        Farcaster
+                    </Link>{' '}
+                    and{' '}
+                    <Link
+                        href="https://join.base.app"
+                        className="text-foreground hover:text-primary transition-colors underline decoration-primary/50 underline-offset-4"
+                    >
+                        Base&nbsp;App
+                    </Link>
+                </span>
             </p>
 
             <div className={cn("flex flex-col sm:flex-row gap-6 w-full sm:w-auto pt-4", isLoading && "opacity-50 pointer-events-none")}>

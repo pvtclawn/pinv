@@ -1,6 +1,6 @@
-# PinV [WIP]
+# PinV ᵝ [WIP]
 
-PinV is a decentralized Farcaster mini-app that turns dynamic, AI-generated widgets into tradable, ownable assets (ERC1155 tokens). It allows users to "pin" live, interactive content to their Farcaster profile or channel, powered by secure, decentralized execution.
+**PinV** turns dynamic, AI-generated widgets into tradable, ownable assets (ERC1155 tokens) on Farcaster. It creates a new economy for interactive content, allowing users to "pin" live applications—showing real-time data like weather, markets, or social feeds—directly to their profiles.
 
 ## 🌟 Vision & Mechanics
 
@@ -28,19 +28,41 @@ PinV is a decentralized Farcaster mini-app that turns dynamic, AI-generated widg
 
 This project is currently in active development.
 
-- ✅ **AI Generation**: Robust generation of Lit Actions and React UI using LLM API.
-- ✅ **Live Preview**: Client-side sandboxed execution for testing.
-- ✅ **Satori Rendering**: Server-side generation of beautiful, accurate preview images.
+- ✅ **AI Generation**: Robust generation of Lit Actions and React UI.
+- ✅ **Base Mini App**: Integrated and configured as a Farcaster Frame v2.
 - 🚧 **Smart Contracts**: ERC1155 integration and Fee Sharing logic (In Design).
 - 🚧 **IPFS Integration**: Storage adapter for code and metadata (In Progress).
 - 🚧 **Lit Protocol**: Full decentralized execution environment (In Progress).
 
-## 🚀 Getting Started (Dev)
+## Getting Started
 
-1.  **Clone & Install**:
-    ```bash
-    git clone https://github.com/guy-do-or-die/pinv.app.git
-    npm install
-    ```
-2.  **Env Setup**: Copy `.env.example` to `.env.local` and add `AI_API_KEY` (or provider specific key).
-3.  **Run**: `npm run dev` to see the widget generation and preview flow.
+### Prerequisites
+
+*   **Base App Account** (for Mini App features)
+*   **Farcaster Account**
+*   Node.js & npm
+
+### Installation
+
+1.  **Clone**: `git clone https://github.com/guy-do-or-die/pinv.app.git`
+2.  **Install**: `npm install`
+3.  **Env**: Copy `.env.example` to `.env.local` and add your keys (e.g., `AI_API_KEY`).
+
+### Development & Verification
+
+Run the local development server:
+
+```bash
+npm run dev
+```
+
+**Verify Farcaster/Base Integration**:
+1.  Run the app locally or tunnel with `ngrok`.
+2.  Visit the [Base Build Preview](https://www.base.dev/preview).
+3.  Enter your app URL to validate the Manifest and metadata.
+
+## Configuration
+
+All application settings (metadata, image URLs, Base address) are centralized in `lib/config.ts`.
+- Update `ownerAddress` with your Base Account address.
+- Ensure `accountAssociation` signature is set in `app/.well-known/farcaster.json/route.ts` for production.

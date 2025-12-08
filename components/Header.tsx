@@ -12,26 +12,15 @@ export default function Header() {
         <header className="sticky top-0 z-50 w-full mb-4 md:mb-8 bg-white/80 backdrop-blur-md border-b border-border">
             <div className="mx-auto px-4 md:px-6 h-16 flex justify-between items-center max-w-[1600px]">
                 {/* Left: Brand - Geometric & Sharp */}
-                <Link href="/" className="flex items-center gap-3 cursor-pointer group">
-                    <img src="/icon.svg" alt="PinV Logo" className="w-8 h-8" />
+                <Link href="/" className="flex items-center gap-2 cursor-pointer group">
+                    <img src="/icon.svg" alt="PinV Logo" className="w-10 h-10" />
                     <span className="text-xl md:text-2xl font-bold font-orbitron tracking-widest group-hover:text-primary transition-colors">
-                        PinV
+                        PinV <span className="text-muted-foreground">ᵝ</span>
                     </span>
                 </Link>
 
                 {/* Right: Controls */}
                 <div className="flex justify-end items-center gap-6">
-                    {/* Navigation Tabs - Raised "Origami" Buttons */}
-                    <nav className="hidden md:flex gap-2">
-                        {['Dashboard', 'Assets', 'Quests'].map((item) => (
-                            <a key={item} href="#" className="px-4 py-1.5 text-xs font-bold font-sans uppercase tracking-wide text-muted-foreground hover:text-primary bg-transparent hover:bg-muted transition-all rounded-sm clip-path-polygon-[10px_0,100%_0,100%_100%,0_100%]">
-                                {item}
-                            </a>
-                        ))}
-                    </nav>
-
-                    <div className="h-6 w-[1px] bg-border hidden md:block" />
-
                     {isConnected ? (
                         <div className="flex items-center gap-3 text-xs font-mono font-bold px-4 py-2 bg-white border border-border shadow-sm">
                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />

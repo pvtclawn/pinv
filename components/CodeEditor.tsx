@@ -4,8 +4,9 @@ import { useState, useCallback } from "react";
 import Editor from "react-simple-code-editor";
 import { Highlight, themes } from "prism-react-renderer";
 import { Button } from "@/components/ui/button";
-import { Maximize2, Minimize2, Copy } from "lucide-react";
+import { Maximize2, Minimize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import CopyButton from "@/components/CopyButton";
 
 interface CodeEditorProps {
     value: string;
@@ -77,17 +78,16 @@ export default function CodeEditor({
                     {language}
                 </span>
                 <div className="flex items-center gap-1">
-                    <Button
+                    <CopyButton
+                        url={value}
                         variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                            navigator.clipboard.writeText(value);
-                        }}
                         className="h-6 w-6 p-0 text-slate-400 hover:text-white hover:bg-slate-700"
+                        iconOnly
+                        unstyled
                         title="Copy code"
                     >
-                        <Copy className="h-4 w-4" />
-                    </Button>
+                        <span className="sr-only">Copy</span>
+                    </CopyButton>
                     <Button
                         variant="ghost"
                         size="sm"

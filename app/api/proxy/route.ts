@@ -10,17 +10,23 @@ export async function GET(req: NextRequest) {
     try {
         console.log(`[LocalProxy] Fetching: ${url}`);
 
-        // Forward headers from the client request
+        // Construct clean headers - minimal forwarding to avoid browser fingerprinting issues
         const headers = new Headers();
+
+        // Allowed headers to forward (Whitelist approach)
+        const allowedHeaders = ['authorization', 'content-type', 'accept', 'x-api-key', 'x-auth-token'];
+
         req.headers.forEach((value, key) => {
-            // Filter out headers that could cause issues or are managed by the fetch API/browser
-            if (!['host', 'connection', 'content-length', 'transfer-encoding', 'cookie'].includes(key.toLowerCase())) {
+            if (allowedHeaders.includes(key.toLowerCase())) {
                 headers.set(key, value);
             }
         });
 
-        // Ensure we identify as a proxy but keep original intent
-        headers.set('User-Agent', req.headers.get('User-Agent') || 'PinV-Proxy/1.0');
+        // Set standard generic headers
+        headers.set('Accept', 'application/json, */*;q=0.5');
+
+        // Force a browser-like User-Agent to bypass basic 403 blocks (common with CoinGecko/CoinCap)
+        headers.set('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
         const response = await fetch(url, {
             headers: headers,
