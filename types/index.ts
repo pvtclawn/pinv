@@ -1,17 +1,13 @@
-export type Fid = number;
-
-export type WidgetType = 'programmable';
-
 export interface Widget {
-  id: string;
-  type: WidgetType;
-  title: string;
-  code: string; // Raw React component code
-  order: number;
+  litActionCode: string;
+  reactCode: string;
+  parameters: any[];
+  previewData: any;
 }
 
 export interface Pin {
-  fid: Fid;
+  id: string;
+
   handle: string;
   title: string;
   tagline: string;
@@ -22,7 +18,6 @@ export interface Pin {
     githubStars?: number;
     followerCount?: number;
   };
-  widgets: Widget[];
   // Defines the single "Hero Widget" for this pin
   widget?: {
     litActionCode: string;

@@ -9,8 +9,8 @@ export async function GET(req: NextRequest) {
         const offset = (page - 1) * limit;
 
         const pins = await blockchainService.getAllPins();
-        // Sort by FID desc (newest first)
-        pins.sort((a, b) => b.fid - a.fid);
+        // Sort by ID desc (newest first)
+        pins.sort((a, b) => parseInt(b.id) - parseInt(a.id));
 
         const paginatedPins = pins.slice(offset, offset + limit);
         const hasMore = offset + limit < pins.length;
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
             handle: 'unknown',
             accentColor: '#3b82f6', // blue-500
             stats: { githubRepos: 0, githubStars: 0, followerCount: 0 },
-            widgets: [],
+
             lastUpdated: new Date().toISOString()
         });
 

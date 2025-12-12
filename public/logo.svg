@@ -14,18 +14,37 @@
       }
     </style>
   </defs>
-  <polygon points="0,0 100,0 100,100 0,100 100,50" fill="#0000FF" />
 
   <text
-    x="50"
-    y="62"
+    x="40"
+    y="64"
     text-anchor="middle"
-    font-size="32"
+    font-size="30"
     font-weight="700"
     fill="#0000FF"
-   font-family="Orbitron">
+    font-family="Orbitron">
     PinV
   </text>
 
-  <polygon points="0,100 100,100 50,186.602" fill="#0000FF" />
+  <path
+    d="
+      M 0 0
+      H 100
+      V 100
+      H 0
+      Z
+
+      M 0 0
+      L 0 100
+      L 86.60254 50
+      Z
+    "
+    fill="#0000FF"
+    fill-rule="evenodd"
+  />
+
+  <polygon
+    points="0,100 100,100 50,186.60254"
+    fill="#0000FF"
+  />
 </svg>

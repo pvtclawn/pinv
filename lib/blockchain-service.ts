@@ -1,5 +1,5 @@
 import { Pin } from '@/types';
-import { MOCK_PINS } from './mock-data';
+
 import fs from 'fs/promises';
 import path from 'path';
 import { createClient, VercelKV } from '@vercel/kv';
@@ -11,12 +11,12 @@ import { createClient, VercelKV } from '@vercel/kv';
 export interface PinStorage {
     /** Retrieve all pins from storage */
     getAllPins(): Promise<Pin[]>;
-    /** Get a single pin by FID, returns null if not found */
-    getPin(fid: number): Promise<Pin | null>;
-    /** Create a new pin, returns the generated FID */
-    createPin(pin: Omit<Pin, 'fid'>): Promise<number>;
+    /** Get a single pin by ID, returns null if not found */
+    getPin(id: number): Promise<Pin | null>;
+    /** Create a new pin, returns the generated ID */
+    createPin(pin: Omit<Pin, 'id'>): Promise<number>;
     /** Update an existing pin, returns transaction hash */
-    updatePin(fid: number, updates: Partial<Pin>): Promise<string>;
+    updatePin(id: number, updates: Partial<Pin>): Promise<string>;
 }
 
 // 1. FILE SYSTEM STORAGE (Local / Offline)
@@ -31,19 +31,11 @@ class FileStorage implements PinStorage {
         try {
             const data = await fs.readFile(this.dataFile, 'utf-8');
             const store = JSON.parse(data);
-            // Ensure mocks exist
-            Object.values(MOCK_PINS).forEach((pin: Pin) => {
-                const key = String(pin.fid);
-                if (!store[key]) {
-                    store[key] = pin;
-                }
-            });
+
             return store;
         } catch (error) {
             const store: Record<string, Pin> = {};
-            Object.values(MOCK_PINS).forEach((pin: Pin) => {
-                store[String(pin.fid)] = pin;
-            });
+
             await this.saveStore(store);
             return store;
         }
@@ -59,32 +51,38 @@ class FileStorage implements PinStorage {
 
     async getAllPins(): Promise<Pin[]> {
         const store = await this.getStore();
-        return Object.values(store);
+        // Robustness: ensure pin.id exists (fallback to key if missing in value)
+        return Object.entries(store).map(([key, pin]) => {
+            if (!pin.id) {
+                return { ...pin, id: key };
+            }
+            return pin;
+        });
     }
 
-    async getPin(fid: number): Promise<Pin | null> {
+    async getPin(id: number): Promise<Pin | null> {
         const store = await this.getStore();
-        return store[String(fid)] || null;
+        return store[String(id)] || null;
     }
 
-    async createPin(pinData: Omit<Pin, 'fid'>): Promise<number> {
+    async createPin(pinData: Omit<Pin, 'id'>): Promise<number> {
         const store = await this.getStore();
-        const allFids = Object.keys(store).map(Number);
-        const newFid = allFids.length > 0 ? Math.max(...allFids) + 1 : 1000;
+        const allIds = Object.keys(store).map(Number);
+        const newId = allIds.length > 0 ? Math.max(...allIds) + 1 : 1000;
 
         const newPin: Pin = {
             ...pinData,
-            fid: newFid,
+            id: String(newId), // We store as string in the interface now
         };
 
-        store[String(newFid)] = newPin;
+        store[String(newId)] = newPin;
         await this.saveStore(store);
-        return newFid;
+        return newId;
     }
 
-    async updatePin(fid: number, updates: Partial<Pin>): Promise<string> {
+    async updatePin(id: number, updates: Partial<Pin>): Promise<string> {
         const store = await this.getStore();
-        const existing = store[String(fid)];
+        const existing = store[String(id)];
         if (!existing) throw new Error('Pin not found');
 
         const updatedPin = {
@@ -95,7 +93,7 @@ class FileStorage implements PinStorage {
             lastUpdated: new Date().toISOString()
         };
 
-        store[String(fid)] = updatedPin;
+        store[String(id)] = updatedPin;
         await this.saveStore(store);
         return '0x' + Math.random().toString(16).slice(2);
     }
@@ -111,7 +109,6 @@ class KVStorage implements PinStorage {
 
     async getAllPins(): Promise<Pin[]> {
         // Redis scan for pin:* keys to get all
-        // Or simpler: Maintain a SET of 'pins' with FIDs
         // For MVP, we will use 'keys pin:*' pattern (slow but fine for <1000 pins)
         const keys = await this.kv.keys('pin:*');
         if (keys.length === 0) return [];
@@ -120,48 +117,39 @@ class KVStorage implements PinStorage {
         return pins.filter(Boolean) as Pin[];
     }
 
-    async getPin(fid: number): Promise<Pin | null> {
-        const key = `pin:${fid}`;
+    async getPin(id: number): Promise<Pin | null> {
+        const key = `pin:${id}`;
         const pin = await this.kv.get<Pin>(key);
         if (!pin) {
-            // Fallback to Mocks if missing in KV
-            // @ts-ignore
-            const mock = MOCK_PINS[fid] || Object.values(MOCK_PINS).find(p => p.fid === fid);
-            if (mock) {
-                // Determine if we should cache this mock back to KV? 
-                // For safety, let's just return it.
-                return mock;
-            }
             return null;
         }
         return pin;
     }
 
-    async createPin(pinData: Omit<Pin, 'fid'>): Promise<number> {
+    async createPin(pinData: Omit<Pin, 'id'>): Promise<number> {
         // Simple auto-increment strategy using a counter key
-        const newFid = await this.kv.incr('global:next_fid');
+        const newId = await this.kv.incr('global:next_pin_id');
         // Initialize counter if first run (ensure > mock IDs)
-        if (newFid < 1000) {
-            await this.kv.set('global:next_fid', 1000);
+        if (newId < 1000) {
+            await this.kv.set('global:next_pin_id', 1000);
             return this.createPin(pinData);
         }
 
-        const newPin: Pin = { ...pinData, fid: newFid };
-        await this.kv.set(`pin:${newFid}`, newPin);
-        return newFid;
+        const newPin: Pin = { ...pinData, id: String(newId) };
+        await this.kv.set(`pin:${newId}`, newPin);
+        return newId;
     }
 
-    async updatePin(fid: number, updates: Partial<Pin>): Promise<string> {
-        const key = `pin:${fid}`;
-        const existing = await this.getPin(fid);
+    async updatePin(id: number, updates: Partial<Pin>): Promise<string> {
+        const key = `pin:${id}`;
+        const existing = await this.getPin(id);
 
         if (!existing) throw new Error('Pin not found');
 
         const updatedPin = {
             ...existing,
             ...updates,
-            // @ts-ignore
-            widget: updates.widget ? { ...existing.widget, ...updates.widget } : existing.widget,
+            widget: updates.widget ? { ...existing.widget || {}, ...updates.widget } as any : existing.widget,
             lastUpdated: new Date().toISOString()
         };
 

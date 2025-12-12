@@ -1,24 +1,26 @@
-import Header from "@/components/Header";
+import Header from "@/components/layout/Header";
 import { blockchainService } from "@/lib/blockchain-service";
-import PinGrid from "@/components/PinGrid";
-import Hero from "@/components/Hero";
+import PinGrid from "@/components/features/grid/PinGrid";
+import Hero from "@/components/layout/Hero";
 
 export default async function Home() {
   const allPins = await blockchainService.getAllPins();
-  // Sort: Newest first
-  allPins.sort((a, b) => b.fid - a.fid);
 
-  // Initial batch for SSR
+  allPins.sort((a, b) => parseInt(b.id) - parseInt(a.id));
+
   const initialPins = allPins.slice(0, 9);
 
   return (
     <div className="min-h-screen font-sans selection:bg-primary/20 bg-background pattern-grid">
+      <Header autoHide />
       <div className="app-container">
-        <Header />
 
         <main className="mt-8 md:mt-12 space-y-16">
-          {/* Hero / CTA */}
-          <Hero />
+          {/* Logo & Hero / CTA */}
+          <div className="flex flex-col items-center justify-center pt-8 md:pt-16 space-y-4">
+            <img src="/logo.svg" alt="PinV Logo" className="w-40 h-40 md:w-72 md:h-72" />
+            <Hero />
+          </div>
 
           {/* Grid of Pins (Client Component) */}
           <PinGrid initialPins={initialPins} />

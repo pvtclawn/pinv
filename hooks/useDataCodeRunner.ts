@@ -7,26 +7,25 @@ interface UseDataCodeRunnerReturn {
     isRunning: boolean;
     result: Record<string, unknown> | null;
     error: string | null;
+    logs: string[];
 }
 
 /**
  * Creates a proxied fetch function that routes requests through our CORS proxy.
  */
-function createProxiedFetch() {
-    return async (url: string, options?: RequestInit) => {
-        const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
-        try {
-            const res = await fetch(proxyUrl, options);
-            if (!res.ok) {
-                const text = await res.text();
-                console.error(`[Proxy] Request failed:`, text);
-            }
-            return res;
-        } catch (e) {
-            console.error(`[Proxy] Network error:`, e);
-            throw e;
+async function proxiedFetch(url: string, options?: RequestInit) {
+    const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+    try {
+        const res = await fetch(proxyUrl, options);
+        if (!res.ok) {
+            const text = await res.text();
+            console.error(`[Proxy] Request failed:`, text);
         }
-    };
+        return res;
+    } catch (e) {
+        console.error(`[Proxy] Network error:`, e);
+        throw e;
+    }
 }
 
 /**
@@ -35,7 +34,7 @@ function createProxiedFetch() {
  * 
  * @example
  * ```tsx
- * const { run, isRunning, result, error } = useDataCodeRunner();
+ * const { run, isRunning, result, error, logs } = useDataCodeRunner();
  * 
  * const handleRun = async () => {
  *   const data = await run(dataCode, { username: "alice" });
@@ -49,6 +48,7 @@ export function useDataCodeRunner(): UseDataCodeRunnerReturn {
     const [isRunning, setIsRunning] = useState(false);
     const [result, setResult] = useState<Record<string, unknown> | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [logs, setLogs] = useState<string[]>([]);
 
     const run = useCallback(async (
         code: string,
@@ -61,13 +61,36 @@ export function useDataCodeRunner(): UseDataCodeRunnerReturn {
 
         setIsRunning(true);
         setError(null);
+        setLogs([]); // Clear previous logs
 
         try {
-            const proxiedFetch = createProxiedFetch();
+            // proxiedFetch is now a stable reference
+            const fetchFn = proxiedFetch;
+
+            const capturedLogs: string[] = [];
+            const capturedConsole = {
+                log: (...args: any[]) => {
+                    capturedLogs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+                    console.log(...args);
+                },
+                error: (...args: any[]) => {
+                    capturedLogs.push('[ERROR] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+                    console.error(...args);
+                },
+                warn: (...args: any[]) => {
+                    capturedLogs.push('[WARN] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+                    console.warn(...args);
+                },
+                info: (...args: any[]) => {
+                    capturedLogs.push('[INFO] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+                    console.info(...args);
+                }
+            };
 
             // Wrap code in an async IIFE and execute
             // Inject proxiedFetch as 'fetch' for automatic CORS proxy routing
-            const executor = new Function('userParams', 'fetch', `
+            // Inject 'console' to capture logs
+            const executor = new Function('userParams', 'fetch', 'console', `
                 return (async () => {
                     const jsParams = userParams; // Alias for Lit Action compatibility
                     
@@ -84,10 +107,11 @@ export function useDataCodeRunner(): UseDataCodeRunnerReturn {
                 })()
             `);
 
-            const executionResult = await executor(params, proxiedFetch);
+            const executionResult = await executor(params, fetchFn, capturedConsole);
             console.log("Data code result:", executionResult);
 
             setResult(executionResult);
+            setLogs(capturedLogs); // Update state with captured logs
             return executionResult;
 
         } catch (err) {
@@ -105,5 +129,6 @@ export function useDataCodeRunner(): UseDataCodeRunnerReturn {
         isRunning,
         result,
         error,
+        logs,
     };
 }

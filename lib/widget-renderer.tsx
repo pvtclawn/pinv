@@ -20,7 +20,6 @@ export async function renderWidget(code: string, props: any, options?: any): Pro
         // 2. Prepare Sandbox Scope
         const proxiedReact = { ...React };
 
-        // Satori Patch: Automatically inject display: 'flex' for divs to prevent crashes
         // @ts-ignore
         proxiedReact.createElement = (type, props, ...children) => {
             if (type === 'div' && props) {

@@ -68,7 +68,7 @@ export function useWidgetGeneration(): UseWidgetGenerationReturn {
             const generationResult: GenerationResult = {
                 dataCode: data.lit_action_code || "",
                 uiCode: data.react_code || "",
-                parameters: data.parameters || [],
+                parameters: (data.parameters || []).map((p: any) => ({ ...p, hidden: true })),
                 previewData: data.preview_data || {},
             };
 

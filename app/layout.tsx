@@ -19,54 +19,11 @@ const orbitron = localFont({
 });
 
 import { NEXT_PUBLIC_APP_URL, APP_CONFIG } from '@/lib/config';
+import { defaultMetadata } from "@/lib/metadata";
 
-export const metadata: Metadata = {
-  title: APP_CONFIG.defaultTitle,
-  description: APP_CONFIG.description,
-  icons: {
-    icon: '/icon.png',
-    shortcut: '/icon.png',
-    apple: '/icon.png',
-  },
-  openGraph: {
-    title: APP_CONFIG.title,
-    description: APP_CONFIG.description,
-    images: [`${NEXT_PUBLIC_APP_URL}/icon.png`],
-  },
-  other: {
-    'fc:miniapp': JSON.stringify({
-      version: 'next',
-      imageUrl: APP_CONFIG.iconUrl,
-      button: {
-        title: `Launch ${APP_CONFIG.title}`,
-        action: {
-          type: 'launch_miniapp',
-          name: APP_CONFIG.title,
-          url: NEXT_PUBLIC_APP_URL,
-          splashImageUrl: APP_CONFIG.iconUrl,
-          splashBackgroundColor: APP_CONFIG.splashBackgroundColor,
-        },
-      },
-    }),
-    'fc:frame': JSON.stringify({
-      version: '1',
-      imageUrl: APP_CONFIG.iconUrl,
-      button: {
-        title: `Launch ${APP_CONFIG.title}`,
-        action: {
-          type: 'launch_frame',
-          name: APP_CONFIG.title,
-          url: NEXT_PUBLIC_APP_URL,
-          splashImageUrl: APP_CONFIG.iconUrl,
-          splashBackgroundColor: APP_CONFIG.splashBackgroundColor,
-        },
-      },
-    }),
-  },
-};
+export const metadata: Metadata = defaultMetadata;
 
-import MiniappProvider from "@/components/MiniappProvider";
-import { Providers } from "@/components/Providers";
+import { Providers } from "@/components/shared/Providers";
 
 export default function RootLayout({
   children,
@@ -75,14 +32,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${orbitron.variable} antialiased`}
-      >
-        <MiniappProvider>
-          <Providers>
-            {children}
-          </Providers>
-        </MiniappProvider>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${orbitron.variable} antialiased`}>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

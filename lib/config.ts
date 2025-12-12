@@ -2,9 +2,9 @@ export const NEXT_PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://p
 
 export const APP_CONFIG = {
     // Used in layout.tsx (metadata) and manifest (name, ogTitle)
-    title: 'PinV ᵅ',
+    title: 'PinVᵅ',
     // Used in layout.tsx (metadata title)
-    defaultTitle: 'PinV ᵅ - Pinned Casts Dynamic View',
+    defaultTitle: 'PinVᵅ - Pinned Casts Dynamic View',
     // Used in layout.tsx (metadata) and manifest (description, ogDescription)
     description: 'Earn from dynamic content on Farcaster and Base App',
     // Used in manifest (subtitle)
