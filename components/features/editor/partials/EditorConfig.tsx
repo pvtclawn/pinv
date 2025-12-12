@@ -16,7 +16,7 @@ export function EditorConfig({
     onParametersChange
 }: EditorConfigProps) {
     return (
-        <div className="space-y-4 pt-2">
+        <div className="space-y-4 p-2">
             <PinParams
                 parameters={parameters}
                 values={values}

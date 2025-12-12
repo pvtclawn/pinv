@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 import { EditorPrompt } from "./partials/EditorPrompt";
 import { EditorConfig } from "./partials/EditorConfig";
-import { EditorCodeBlock } from "./partials/EditorCodeBlock";
+import { EditorCode } from "./partials/EditorCode";
 import { EditorLogs } from "./partials/EditorLogs";
 import {
     Accordion,
@@ -77,7 +77,6 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
 
     // Accordion state - default to 'prompt'
     const [accordionValue, setAccordionValue] = useState("prompt");
-    const [lastRunTime, setLastRunTime] = useState<Date | null>(null);
 
     // Extracted hooks
     const { generate, isGenerating, error: generateError } = useWidgetGeneration();
@@ -127,7 +126,6 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
 
             // Auto-trigger preview render
             renderPreview(result.uiCode, result.previewData);
-            setLastRunTime(new Date());
         }
     };
 
@@ -143,7 +141,6 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
         if (result) {
             // Re-render preview with live data
             renderPreview(uiCode, result);
-            setLastRunTime(new Date());
         }
     };
 
@@ -209,7 +206,7 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
                 );
             case "code":
                 return (
-                    <EditorCodeBlock
+                    <EditorCode
                         dataCode={dataCode}
                         setDataCode={setDataCode}
                         uiCode={uiCode}
@@ -218,7 +215,7 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
                 );
             case "logs":
                 return (
-                    <EditorLogs logs={logs} lastRunTime={lastRunTime} />
+                    <EditorLogs logs={logs} />
                 );
             default:
                 return null;
@@ -226,85 +223,86 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
     };
 
     return (
-        <div className="flex flex-col gap-0 max-w-3xl mx-auto relative">
-            {hasGenerated && (
-                <PinDisplayCard
-                    title={title}
-                    description={tagline}
-                    imageSrc={previewImageUrl}
-                    isLoading={isGenerating || isPreviewLoading || isDataCodeRunning}
-                >
-                    <div className="w-full md:px-0">
-                        <div className="grid grid-cols-3 gap-2 md:gap-4 w-full">
-                            <Button
-                                variant="outline"
-                                onClick={() => router.push(`/p/${pinId}`)}
-                                className="w-full h-10 font-bold tracking-wider"
-                                icon={ChevronLeft}
-                            >
-                                BACK
-                            </Button>
-                            <Button
-                                variant="secondary"
-                                onClick={handleRunDataCode}
-                                disabled={isDataCodeRunning || isPreviewLoading}
-                                isLoading={isPreviewLoading}
-                                className="w-full h-10 font-bold tracking-wider"
-                                icon={Play}
-                            >
-                                UPDATE
-                            </Button>
-                            <Button
-                                onClick={handleSave}
-                                disabled={!hasGenerated || isDataCodeRunning}
-                                className="w-full h-10 font-bold tracking-wider"
-                                icon={Save}
-                            >
-                                SAVE
-                            </Button>
+        <div className={cn("flex flex-col gap-0 max-w-3xl mx-auto relative", !hasGenerated && "pt-20 md:pt-24")}>
+            {hasGenerated ? (
+                <>
+                    <PinDisplayCard
+                        title={title}
+                        description={tagline}
+                        imageSrc={previewImageUrl}
+                        isLoading={isGenerating || isPreviewLoading || isDataCodeRunning}
+                    >
+                        <div className="w-full px-0">
+                            <div className="grid grid-cols-3 gap-2 md:gap-4 w-full">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => router.push(`/p/${pinId}`)}
+                                    className="w-full h-10 font-bold tracking-wider"
+                                    icon={ChevronLeft}
+                                >
+                                    BACK
+                                </Button>
+                                <Button
+                                    variant="secondary"
+                                    onClick={handleRunDataCode}
+                                    disabled={isDataCodeRunning || isPreviewLoading}
+                                    isLoading={isPreviewLoading}
+                                    className="w-full h-10 font-bold tracking-wider"
+                                    icon={Play}
+                                >
+                                    UPDATE
+                                </Button>
+                                <Button
+                                    onClick={handleSave}
+                                    disabled={!hasGenerated || isDataCodeRunning}
+                                    className="w-full h-10 font-bold tracking-wider"
+                                    icon={Save}
+                                >
+                                    SAVE
+                                </Button>
+                            </div>
                         </div>
+                    </PinDisplayCard>
+
+                    <Accordion
+                        type="single"
+                        collapsible
+                        value={accordionValue}
+                        onValueChange={setAccordionValue}
+                        className="w-full bg-card border shadow-lg flex flex-col relative"
+                    >
+                        {SECTION_CONFIG.map((section) => (
+                            <AccordionItem
+                                key={section.id}
+                                value={section.id}
+                                className={cn(accordionValue === section.id && "order-first")}
+                            >
+                                <AccordionTrigger className="text-lg font-semibold px-4 md:px-6 py-4 cursor-pointer items-center hover:bg-accent/50 hover:no-underline">
+                                    <span className="flex items-center gap-3">
+                                        <section.icon className="h-5 w-5 text-primary" />
+                                        <span className="leading-none translate-y-[3px]">{section.label}</span>
+                                    </span>
+                                </AccordionTrigger>
+                                <AccordionContent className="p-0 border-b-2">
+                                    {renderContent(section.id)}
+                                </AccordionContent>
+                            </AccordionItem>
+                        ))}
+                    </Accordion>
+                </>
+            ) : (
+                <div className="w-full bg-card border shadow-lg flex flex-col relative rounded-md">
+                    <div className="flex flex-1 items-center justify-between gap-4 py-4 px-4 md:px-6 text-left text-sm font-medium border-b">
+                        <span className="flex items-center gap-3">
+                            <Wand2 className="h-5 w-5 text-primary" />
+                            <span className="text-lg font-semibold leading-none translate-y-[3px]">Prompt</span>
+                        </span>
                     </div>
-                </PinDisplayCard>
+                    <div className="p-0">
+                        {renderContent("prompt")}
+                    </div>
+                </div>
             )}
-
-            <Accordion
-                type="single"
-                collapsible
-                value={accordionValue}
-                onValueChange={setAccordionValue}
-                className="w-full bg-card border shadow-lg flex flex-col relative"
-            >
-                {SECTION_CONFIG.map((section) => {
-                    // Only show 'prompt' if nothing generated, but show others if generated
-                    if (!hasGenerated && section.id !== "prompt") return null;
-
-                    return (
-                        <AccordionItem
-                            key={section.id}
-                            value={section.id}
-                            className={cn(
-                                section.id !== "logs" && "border-b",
-                                accordionValue === section.id && "order-first"
-                            )}
-                        >
-                            <AccordionTrigger className="text-lg font-semibold px-4 md:px-6 py-3 cursor-pointer items-center hover:bg-muted hover:no-underline">
-                                <span className="flex items-center gap-3">
-                                    <section.icon className="h-5 w-5 text-primary" />
-                                    <span className="leading-none translate-y-[3px]">{section.label}</span>
-                                </span>
-                            </AccordionTrigger>
-                            <AccordionContent className={cn(
-                                section.id === "logs" ? "px-0 pb-0" :
-                                    section.id === "code" ? "px-0 pb-0" : // Edge to edge for code too
-                                        "px-4 md:px-6 pb-4",
-                                section.id === "code" && "pt-0" // Remove top padding for code to flush with tabs
-                            )}>
-                                {renderContent(section.id)}
-                            </AccordionContent>
-                        </AccordionItem>
-                    );
-                })}
-            </Accordion>
         </div>
     );
 }

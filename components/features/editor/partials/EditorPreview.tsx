@@ -26,7 +26,7 @@ export function EditorPreview({
 }: EditorPreviewProps) {
     return (
         <div className={cn(
-            "flex flex-col gap-6 sticky top-24 min-w-0"
+            "flex flex-col gap-4 sticky top-24 min-w-0"
         )}>
             <PinDisplayCard
                 title="Preview"

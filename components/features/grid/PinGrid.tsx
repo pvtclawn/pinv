@@ -82,7 +82,7 @@ export default function PinGrid({ initialPins }: PinGridProps) {
                             </div>
 
                             {/* Preview Window (Data Enclave) */}
-                            <DataEnclave className="w-full aspect-[3/2] p-0 overflow-hidden md:group-hover:border-primary/30 transition-colors border-y border-transparent relative">
+                            <DataEnclave className="w-full aspect-3/2 p-0 overflow-hidden md:group-hover:border-primary/30 transition-colors border-y border-transparent relative">
                                 {/* Background Image */}
                                 <PinThumbnail
                                     src={`/api/og/p/${pin.id}`}
@@ -94,7 +94,7 @@ export default function PinGrid({ initialPins }: PinGridProps) {
                             {/* Footer */}
                             <div className="mt-auto mx-6 border-t border-dashed border-border py-4 flex justify-between items-center">
                                 <span className="text-xs font-mono text-muted-foreground">
-                                    @{pin.handle}
+                                    {pin.tagline}
                                 </span>
                                 <ArrowRight className="w-4 h-4 text-muted-foreground md:group-hover:text-primary md:group-hover:translate-x-1 transition-all" />
                             </div>

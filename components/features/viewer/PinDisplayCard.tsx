@@ -70,7 +70,7 @@ export default function PinDisplayCard({
             </CardContent>
 
             {(children) && (
-                <CardFooter className={cn("flex flex-col gap-4 bg-muted/5 px-4 pb-4 pt-0 md:px-6 md:pb-6 md:pt-0", footerClassName)}>
+                <CardFooter className={cn("flex flex-col bg-muted/5", footerClassName)}>
                     {children}
                 </CardFooter>
             )}

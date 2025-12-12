@@ -3,19 +3,19 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CodeEditor from "../CodeEditor";
 
-interface EditorCodeBlockProps {
+interface EditorCodeProps {
     dataCode: string;
     setDataCode: (code: string) => void;
     uiCode: string;
     setUICode: (code: string) => void;
 }
 
-export function EditorCodeBlock({
+export function EditorCode({
     dataCode,
     setDataCode,
     uiCode,
     setUICode
-}: EditorCodeBlockProps) {
+}: EditorCodeProps) {
     return (
         <Tabs defaultValue="data" className="gap-0">
             <TabsList className="w-full bg-muted/30 rounded-none border-b border-border p-0 h-10">

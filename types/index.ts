@@ -7,24 +7,16 @@ export interface Widget {
 
 export interface Pin {
   id: string;
-
-  handle: string;
   title: string;
   tagline: string;
-  accentColor: string;
   lastUpdated: string;
-  stats: {
-    githubRepos?: number;
-    githubStars?: number;
-    followerCount?: number;
-  };
-  // Defines the single "Hero Widget" for this pin
+  accentColor?: string;
   widget?: {
     litActionCode: string;
     reactCode: string;
     parameters: any[];
     previewData: any;
-    userConfig?: Record<string, string>; // Saved parameter values
+    userConfig?: Record<string, string>;
   };
 }
 

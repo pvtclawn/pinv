@@ -8,7 +8,7 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { searchParams } = new URL(request.url);
-    const hasPreviewParams = searchParams.has('title') || searchParams.has('handle');
+    const hasPreviewParams = searchParams.has('title')
 
     const { id: idStr } = await params;
     const pinId = parseInt(idStr);
@@ -17,9 +17,6 @@ export async function GET(
     let pin = await blockchainService.getPin(pinId) || {
         title: 'Pin Not Found',
         tagline: '',
-        handle: 'unknown',
-        accentColor: '#000000',
-        stats: { githubRepos: 0, githubStars: 0, followerCount: 0 },
         widgets: [],
         widget: undefined,
         lastUpdated: new Date().toISOString()
@@ -31,16 +28,8 @@ export async function GET(
             ...pin,
             title: searchParams.get('title') || pin.title,
             tagline: searchParams.get('tagline') || pin.tagline,
-            handle: searchParams.get('handle') || pin.handle,
-            accentColor: searchParams.get('accentColor') ? `#${searchParams.get('accentColor')}` : pin.accentColor,
-            stats: {
-                githubRepos: parseInt(searchParams.get('repos') ?? '0') || pin.stats.githubRepos || 0,
-                githubStars: parseInt(searchParams.get('stars') ?? '0') || pin.stats.githubStars || 0,
-                followerCount: parseInt(searchParams.get('followers') ?? '0') || pin.stats.followerCount || 0,
-            }
         };
     }
-
 
     // 4. Render Dynamic Widget (if available)
     if (pin.widget && pin.widget.reactCode) {
@@ -122,7 +111,7 @@ export async function GET(
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     backgroundColor: '#1a1a1a',
-                    backgroundImage: `linear-gradient(to bottom right, #1a1a1a, ${pin.accentColor}80)`,
+                    backgroundImage: `linear-gradient(to bottom right, #1a1a1a, ${(pin as any).accentColor || '#3b82f6'}80)`,
                     color: 'white',
                     padding: '80px',
                     fontFamily: 'sans-serif',
@@ -131,45 +120,44 @@ export async function GET(
                 {/* Header */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <div style={{ display: 'flex', fontSize: 32, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '4px' }}>
-                        PinV
+                        {pin.title}
                     </div>
                     <div style={{ display: 'flex', fontSize: 80, fontWeight: 900, marginTop: 20 }}>
-                        {pin.handle}
+                        {pin.tagline}
                     </div>
-                </div>
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                            borderRadius: '40px',
+                            padding: '40px 80px',
+                            border: '2px solid rgba(255, 255, 255, 0.2)',
+                            width: '80%',
+                            height: '60%', // Make it take up decent space
+                        }}
+                    >
+                        <div style={{ display: 'flex', fontSize: 48, textAlign: 'center', marginBottom: 20 }}>
+                            {pin.tagline || 'No description available'}
+                        </div>
 
-                <div
-                    style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                        borderRadius: '40px',
-                        padding: '40px 80px',
-                        border: '2px solid rgba(255, 255, 255, 0.2)',
-                        width: '80%',
-                        height: '60%', // Make it take up decent space
-                    }}
-                >
-                    <div style={{ display: 'flex', fontSize: 48, textAlign: 'center', marginBottom: 20 }}>
-                        {pin.tagline || 'No description available'}
+                        <div style={{ display: 'flex', fontSize: 24, opacity: 0.6, marginTop: 40, alignItems: 'center', gap: '10px' }}>
+                            {/* Simple SVG icon for "Widget" */}
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                                <path d="M3 9h18" />
+                                <path d="M9 21V9" />
+                            </svg>
+                            <span>Preview Unavailable</span>
+                        </div>
                     </div>
 
-                    <div style={{ display: 'flex', fontSize: 24, opacity: 0.6, marginTop: 40, alignItems: 'center', gap: '10px' }}>
-                        {/* Simple SVG icon for "Widget" */}
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-                            <path d="M3 9h18" />
-                            <path d="M9 21V9" />
-                        </svg>
-                        <span>Preview Unavailable</span>
+                    {/* Footer */}
+                    <div style={{ display: 'flex', fontSize: 24, opacity: 0.5 }}>
+                        pinv.app
                     </div>
-                </div>
-
-                {/* Footer */}
-                <div style={{ display: 'flex', fontSize: 24, opacity: 0.5 }}>
-                    pinv.app
                 </div>
             </div>
         ),
@@ -178,7 +166,7 @@ export async function GET(
             height: 800,
             headers: {
                 'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=600',
-            },
+            }
         }
     );
 }

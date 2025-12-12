@@ -31,10 +31,6 @@ export async function POST(req: NextRequest) {
         const newPinId = await blockchainService.createPin({
             title: 'New Pin',
             tagline: 'Freshly minted',
-            handle: 'unknown',
-            accentColor: '#3b82f6', // blue-500
-            stats: { githubRepos: 0, githubStars: 0, followerCount: 0 },
-
             lastUpdated: new Date().toISOString()
         });
 

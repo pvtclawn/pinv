@@ -55,13 +55,13 @@ export default function PinViewer({ pin, pinId, initialParams }: PinViewerProps)
     const visibleParameters = parameters.filter((p: any) => !p.hidden);
 
     return (
-        <div className="flex flex-col gap-0 max-w-3xl mx-auto relative">
+        <div className="flex flex-col max-w-3xl mx-auto relative">
             <PinDisplayCard
                 title={pin.title}
                 description={pin.tagline}
                 imageSrc={previewUrl}
             >
-                <div className="space-y-3 w-full">
+                <div className="space-y-3 w-full mb-6">
                     {/* Parameter Customization */}
                     {visibleParameters.length > 0 && (
                         <div className="rounded-none">
@@ -75,7 +75,7 @@ export default function PinViewer({ pin, pinId, initialParams }: PinViewerProps)
                 </div>
 
                 {/* Actions Footer */}
-                <div className="w-full md:px-0 pb-4 md:pb-0">
+                <div className="w-full">
                     <div className="grid grid-cols-3 gap-2 md:gap-4 w-full">
                         <div className="w-full [&>button]:w-full">
                             <CopyButton

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import CopyButton from "@/components/shared/CopyButton";
+import { FloatingActions } from "./partials/FloatingActions";
 
 interface CodeEditorProps {
     value: string;
@@ -90,37 +91,13 @@ export default function CodeEditor({
             // Remove rounding to close gaps with tabs
             "rounded-none"
         )}>
-            {/* Toolbar */}
-            <div className="flex items-center justify-between px-3 py-2 bg-muted/30 border-b border-border shrink-0">
-                <span className="text-xs text-muted-foreground uppercase tracking-wider font-mono font-semibold">
-                    {language}
-                </span>
-                <div className="flex items-center gap-1">
-                    <CopyButton
-                        url={value}
-                        variant="ghost"
-                        className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground hover:bg-muted"
-                        iconOnly
-                        unstyled
-                        title="Copy code"
-                    >
-                        <span className="sr-only">Copy</span>
-                    </CopyButton>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsFullscreen(!isFullscreen)}
-                        className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground hover:bg-muted"
-                        title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-                    >
-                        {isFullscreen ? (
-                            <Minimize2 className="h-4 w-4" />
-                        ) : (
-                            <Maximize2 className="h-4 w-4" />
-                        )}
-                    </Button>
-                </div>
-            </div>
+            <FloatingActions
+                label={language}
+                content={value}
+                isFullscreen={isFullscreen}
+                onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
+                className="z-50"
+            />
 
             {/* Editor Container - Scrollable */}
             <div className="flex-1 overflow-auto relative bg-background w-full">
