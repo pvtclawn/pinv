@@ -19,7 +19,7 @@ export async function GET() {
             name: APP_CONFIG.title,
             homeUrl: appUrl,
             iconUrl: APP_CONFIG.iconUrl,
-            splashImageUrl: APP_CONFIG.iconUrl,
+            splashImageUrl: APP_CONFIG.splashImageUrl,
             splashBackgroundColor: APP_CONFIG.splashBackgroundColor,
             webhookUrl: APP_CONFIG.webhookUrl,
             subtitle: APP_CONFIG.subtitle,

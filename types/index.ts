@@ -10,7 +10,6 @@ export interface Pin {
   title: string;
   tagline: string;
   lastUpdated: string;
-  accentColor?: string;
   widget?: {
     litActionCode: string;
     reactCode: string;

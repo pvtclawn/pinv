@@ -13,16 +13,18 @@ export const APP_CONFIG = {
     tagline: 'Pinned casts dynamic view',
     // Used in layout.tsx (icons, openGraph, fc metadata) and manifest (iconUrl, splashImageUrl)
     iconUrl: `${NEXT_PUBLIC_APP_URL}/icon.png`,
+    // Used in layout.tsx (splashImageUrl) and manifest (splashImageUrl)
+    splashImageUrl: `${NEXT_PUBLIC_APP_URL}/splash.png`,
     // Used in PinViewer.tsx
     shareText: 'Here’s my PinV 👇',
     // Used in manifest
-    heroImageUrl: `${NEXT_PUBLIC_APP_URL}/icon.png`,
+    heroImageUrl: `${NEXT_PUBLIC_APP_URL}/hero.png`,
     // Used in manifest
-    screenshotUrls: [`${NEXT_PUBLIC_APP_URL}/icon.png`],
+    screenshotUrls: [`${NEXT_PUBLIC_APP_URL}/hero.png`],
     // Used in manifest
-    ogImageUrl: `${NEXT_PUBLIC_APP_URL}/icon.png`,
+    ogImageUrl: `${NEXT_PUBLIC_APP_URL}/hero.png`,
     // Used in layout.tsx and manifest
-    splashBackgroundColor: '#F6F7FA',
+    splashBackgroundColor: '#16161b',
     // Used in manifest
     webhookUrl: `${NEXT_PUBLIC_APP_URL}/api/webhook`,
     // Used in manifest

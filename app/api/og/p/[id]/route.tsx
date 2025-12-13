@@ -111,7 +111,7 @@ export async function GET(
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     backgroundColor: '#1a1a1a',
-                    backgroundImage: `linear-gradient(to bottom right, #1a1a1a, ${(pin as any).accentColor || '#3b82f6'}80)`,
+                    backgroundImage: `linear-gradient(to bottom right, #1a1a1a, #3b82f680)`,
                     color: 'white',
                     padding: '80px',
                     fontFamily: 'sans-serif',

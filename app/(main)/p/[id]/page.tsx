@@ -49,7 +49,6 @@ export async function generateMetadata(
         description: pin.tagline,
         imageUrl: imageUrl,
         url: pinUrl,
-        splashBackgroundColor: pin.accentColor
     });
 }
 
