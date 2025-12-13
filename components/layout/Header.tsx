@@ -1,9 +1,11 @@
 'use client';
 
-import { useAccount, useConnect } from 'wagmi';
+import { useConnect } from 'wagmi';
 
 import Link from "next/link";
 
+import { useAccount } from '@/components/features/wallet';
+import { Connection } from '@/components/features/wallet/Connection';
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "./ModeToggle";
 
@@ -14,7 +16,7 @@ interface HeaderProps {
 }
 
 export default function Header({ autoHide = false }: HeaderProps) {
-    const { isConnected, address } = useAccount();
+    const { loggedIn, address } = useAccount();
     const { connect, connectors } = useConnect();
     const [isVisible, setIsVisible] = useState(!autoHide);
 
@@ -48,21 +50,7 @@ export default function Header({ autoHide = false }: HeaderProps) {
                 {/* Right: Controls */}
                 <div className="flex justify-end items-center gap-2 mr-2">
                     <ModeToggle />
-                    {isConnected ? (
-                        <div className="flex items-center gap-3 text-xs font-mono font-bold px-4 py-2 bg-card border border-border shadow-sm">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                            <span className="text-foreground tracking-wider">
-                                {address?.slice(0, 6)}...{address?.slice(-4)}
-                            </span>
-                        </div>
-                    ) : (
-                        <Button
-                            onClick={() => connect({ connector: connectors[0] })}
-                            className="bg-primary hover:bg-primary/90 text-white font-bold font-sans uppercase tracking-wider rounded-none px-6 h-9 shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
-                        >
-                            Connect Wallet
-                        </Button>
-                    )}
+                    <Connection />
                 </div>
             </div>
         </header>

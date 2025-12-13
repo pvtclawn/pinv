@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Zap, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import MintButton from "@/components/features/mint/MintButton";
 import { cn } from "@/lib/utils";
 
 interface HeroProps {
@@ -36,11 +37,7 @@ export default function Hero({ isLoading = false }: HeroProps) {
             </p>
 
             <div className={cn("flex flex-col sm:flex-row gap-6 w-full sm:w-auto pt-4", isLoading && "opacity-50 pointer-events-none")}>
-                <form action="/api/pins" method="POST" className="w-full sm:w-auto">
-                    <Button className="w-full sm:w-auto" icon={Zap} disabled={isLoading}>
-                        {isLoading ? "Mint Your Own" : "Mint Your Own"}
-                    </Button>
-                </form>
+                <MintButton disabled={isLoading} className="w-full sm:w-auto" />
                 <Link href="https://docs.pintv.app" className="w-full sm:w-auto" target="_blank">
                     <Button variant="outline" className="w-full sm:w-auto" icon={Info} disabled={isLoading}>
                         How it works

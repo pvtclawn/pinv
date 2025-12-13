@@ -1,43 +1,20 @@
 'use client';
 
-import { OnchainKitProvider } from '@coinbase/onchainkit';
-import { base } from 'wagmi/chains';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { type ReactNode, useState } from 'react';
-import { type State, WagmiProvider } from 'wagmi';
+import { ReactNode } from 'react';
 
-import { getConfig } from '@/lib/wagmi';
+import WalletProvider from '../features/wallet';
 import MiniappProvider from './MiniappProvider';
-import { ThemeProvider } from '../theme-provider';
+import ThemeProvider from './ThemeProvider';
 
-export function Providers(props: {
-    children: ReactNode;
-    initialState?: State;
-}) {
-    const [config] = useState(() => getConfig());
-    const [queryClient] = useState(() => new QueryClient());
 
+export default function Providers({ children }: { children: ReactNode; }) {
     return (
-
-        <WagmiProvider config={config} initialState={props.initialState}>
-            <QueryClientProvider client={queryClient}>
-                <OnchainKitProvider
-                    apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}
-                    chain={base}
-                >
-                    <MiniappProvider>
-                        <ThemeProvider
-                            attribute="class"
-                            defaultTheme="system"
-                            enableSystem
-                            disableTransitionOnChange
-                        >
-                            {props.children}
-                        </ThemeProvider>
-                    </MiniappProvider>
-                </OnchainKitProvider>
-            </QueryClientProvider>
-        </WagmiProvider>
+        <WalletProvider>
+            <MiniappProvider>
+                <ThemeProvider>
+                    {children}
+                </ThemeProvider>
+            </MiniappProvider>
+        </WalletProvider>
     );
-
 }

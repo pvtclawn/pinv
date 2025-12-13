@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader } from "@/components/ui/Loader";
+import { Loader } from "@/components/shared/Loader";
 import { cn } from "@/lib/utils";
 
 interface PinThumbnailProps {

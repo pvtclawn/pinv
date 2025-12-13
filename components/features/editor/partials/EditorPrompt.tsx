@@ -4,9 +4,9 @@ import { useState, useCallback, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Wand2 } from "lucide-react";
-import CopyButton from "@/components/shared/CopyButton"; // Can be removed if unused, but FloatingActions uses it internally? No, FloatingActions imports it.
-import { FloatingActions } from "./FloatingActions";
 import { cn } from "@/lib/utils";
+
+import { FloatingActions } from "./FloatingActions";
 
 interface EditorPromptProps {
     prompt: string;
@@ -15,9 +15,10 @@ interface EditorPromptProps {
     isConnected: boolean;
     hasGenerated: boolean;
     error: string | null;
-    onGenerate: () => void;
+    onGenerate: (fromScratch?: boolean) => void;
     onBack: () => void;
 }
+
 
 export function EditorPrompt({
     prompt,
@@ -85,12 +86,6 @@ export function EditorPrompt({
                 </>
             ) : content}
 
-            {!isConnected && (
-                <p className="text-destructive text-sm font-bold">Please connect wallet.</p>
-            )}
-            {error && (
-                <p className="text-destructive text-sm font-bold">{error}</p>
-            )}
             <div className="flex gap-4">
                 {!hasGenerated && (
                     <Button
@@ -101,15 +96,39 @@ export function EditorPrompt({
                         Back
                     </Button>
                 )}
-                <Button
-                    onClick={onGenerate}
-                    disabled={isGenerating || !isConnected || !prompt.trim()}
-                    isLoading={isGenerating}
-                    className="flex-1"
-                    icon={Wand2}
-                >
-                    {hasGenerated ? "REFINE" : "CONSTRUCT"}
-                </Button>
+                {hasGenerated ? (
+                    <>
+                        <Button
+                            onClick={() => onGenerate(true)}
+                            disabled={isGenerating || !isConnected || !prompt.trim()}
+                            isLoading={isGenerating}
+                            variant="outline"
+                            className="flex-1"
+                            icon={Wand2}
+                        >
+                            BRAND NEW
+                        </Button>
+                        <Button
+                            onClick={() => onGenerate(false)}
+                            disabled={isGenerating || !isConnected || !prompt.trim()}
+                            isLoading={isGenerating}
+                            className="flex-1"
+                            icon={Wand2}
+                        >
+                            REFINE
+                        </Button>
+                    </>
+                ) : (
+                    <Button
+                        onClick={() => onGenerate(false)}
+                        disabled={isGenerating || !isConnected || !prompt.trim()}
+                        isLoading={isGenerating}
+                        className="flex-1"
+                        icon={Wand2}
+                    >
+                        CONSTRUCT
+                    </Button>
+                )}
             </div>
         </div>
     );

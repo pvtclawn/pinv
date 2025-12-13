@@ -1,14 +1,9 @@
 import Header from "@/components/layout/Header";
-import { blockchainService } from "@/lib/blockchain-service";
 import PinGrid from "@/components/features/grid/PinGrid";
 import Hero from "@/components/layout/Hero";
 
 export default async function Home() {
-  const allPins = await blockchainService.getAllPins();
-
-  allPins.sort((a, b) => parseInt(b.id) - parseInt(a.id));
-
-  const initialPins = allPins.slice(0, 9);
+  const initialPins: any[] = [];
 
   return (
     <div className="min-h-screen font-sans selection:bg-primary/20 bg-background pattern-grid">

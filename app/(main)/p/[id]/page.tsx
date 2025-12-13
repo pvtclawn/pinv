@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { Metadata, ResolvingMetadata } from 'next';
-import { blockchainService } from '@/lib/blockchain-service';
+import { getPin } from '@/lib/server/pin';
 import { NEXT_PUBLIC_APP_URL } from '@/lib/config';
 import PinViewer from "@/components/features/viewer/PinViewer";
 import { constructMetadata } from "@/lib/metadata";
@@ -18,7 +18,7 @@ export async function generateMetadata(
     const { id: idStr } = await params;
     const resolvedSearchParams = await searchParams;
     const pinId = parseInt(idStr);
-    const pin = await blockchainService.getPin(pinId);
+    const pin = await getPin(pinId);
 
     if (!pin) {
         return {
@@ -56,7 +56,7 @@ export default async function PinPage({ params, searchParams }: Props) {
     const { id: idStr } = await params;
     const resolvedSearchParams = await searchParams; // Next.js 15+ needs await, sticking to safe pattern
     const pinId = parseInt(idStr);
-    const pin = await blockchainService.getPin(pinId);
+    const pin = await getPin(pinId);
 
     if (!pin) {
         notFound();

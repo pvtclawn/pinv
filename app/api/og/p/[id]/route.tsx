@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { blockchainService } from '@/lib/blockchain-service';
+import { getPin } from '@/lib/server/pin';
 
 
 
@@ -14,7 +14,7 @@ export async function GET(
     const pinId = parseInt(idStr);
 
     // Default pin data
-    let pin = await blockchainService.getPin(pinId) || {
+    let pin = await getPin(pinId) || {
         title: 'Pin Not Found',
         tagline: '',
         widgets: [],

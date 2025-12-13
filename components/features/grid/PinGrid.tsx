@@ -1,11 +1,16 @@
 "use client";
 
+import { usePins } from "@/hooks/usePins";
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+
 import { ArrowRight, Zap, Loader2 } from "lucide-react";
+
 import { Pin } from "@/types";
 import { Card } from "@/components/ui/card";
-import { DataEnclave } from "@/components/ui/DataEnclave";
+import { DataEnclave } from "@/components/shared/DataEnclave";
+
 import PinThumbnail from "./PinThumbnail";
 
 interface PinGridProps {
@@ -13,35 +18,20 @@ interface PinGridProps {
 }
 
 export default function PinGrid({ initialPins }: PinGridProps) {
-    const [pins, setPins] = useState<Pin[]>(initialPins);
-    const [page, setPage] = useState(1);
-    const [hasMore, setHasMore] = useState(true);
-    const [isLoading, setIsLoading] = useState(false);
+    // Merge initialPins with hook state if needed, or just rely on hook for now
+    // Since we are refactoring to client-side fetching as primary for this task:
+    const { pins, hasMore, loadMore, isLoading } = usePins();
+
+    // Trigger initial load if no pins (or if we want to fetch updates)
+    // Trigger initial load if no pins (or if we want to fetch updates)
+    // NOTE: IntersectionObserver (sentinel) below also triggers loadMore if pins are empty and hasMore is true.
+    // We keep this specific check simple: Only if we haven't loaded anything and not loading.
+    // Actually, strict mode double-invokes this + sentinel.
+    // The safest way is to trust the sentinel for the "bottom" or "empty" state trigger.
+    // Removing this explicit effect to rely on Sentinel + IO.
+
     const observerRef = useRef<IntersectionObserver | null>(null);
     const sentinelRef = useRef<HTMLDivElement>(null);
-
-    const loadMore = useCallback(async () => {
-        if (isLoading || !hasMore) return;
-        setIsLoading(true);
-
-        try {
-            const nextPage = page + 1;
-            const res = await fetch(`/api/pins?page=${nextPage}&limit=9`);
-            const data = await res.json();
-
-            if (data.pins?.length > 0) {
-                setPins((prev) => [...prev, ...data.pins]);
-                setPage(nextPage);
-                setHasMore(data.hasMore);
-            } else {
-                setHasMore(false);
-            }
-        } catch (error) {
-            console.error("Failed to load more pins:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [page, hasMore, isLoading]);
 
     useEffect(() => {
         if (isLoading) return;
@@ -102,12 +92,11 @@ export default function PinGrid({ initialPins }: PinGridProps) {
                     </Link>
                 ))}
 
-                {pins.length === 0 && (
-                    <div className="col-span-full flex flex-col items-center justify-center py-32 text-center space-y-4 border-2 border-dashed border-border rounded-xl bg-white/50">
-                        <div className="w-16 h-16 bg-white border border-border shadow-sm flex items-center justify-center mb-4 rounded-full">
-                            <Zap className="w-8 h-8 text-muted-foreground" />
-                        </div>
-                        <p className="text-muted-foreground pb-4 font-sans font-medium max-w-md">No pins found. Create the first one</p>
+                {!isLoading && pins.length === 0 && (
+                    <div className="col-span-full flex flex-col items-center justify-center py-32 text-center space-y-4 border border-dashed border-border/50 bg-card/50 rounded-none relative overflow-hidden group">
+                        <p className="text-muted-foreground pb-4 font-mono text-sm tracking-widest uppercase max-w-md z-10">
+                            No pins detected. <span className="text-primary font-bold">Initialize Protocol.</span>
+                        </p>
                     </div>
                 )}
             </div>

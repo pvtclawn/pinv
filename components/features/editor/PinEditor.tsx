@@ -21,6 +21,7 @@ import PinDisplayCard from "../viewer/PinDisplayCard";
 
 import { Button } from "@/components/ui/button";
 import { Play, Save, Wand2, Settings2, Code2, TerminalSquare, ChevronLeft } from "lucide-react";
+import { notify } from "@/components/shared/Notifications";
 
 interface PinEditorProps {
     pinId: number;
@@ -72,8 +73,7 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
     const [parameters, setParameters] = useState<any[]>(initialWidget?.parameters || []);
     const [previewData, setPreviewData] = useState<Record<string, unknown>>(initialWidget?.previewData || {});
 
-    // If we have a widget, we effectively have "generated" content already
-    const [hasGenerated, setHasGenerated] = useState(!!initialWidget);
+    const [hasGenerated, setHasGenerated] = useState(!!(initialWidget && initialWidget.reactCode));
 
     // Accordion state - default to 'prompt'
     const [accordionValue, setAccordionValue] = useState("prompt");
@@ -92,12 +92,13 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
 
 
     // Handle AI generation
-    const handleGenerate = async () => {
+    const handleGenerate = async (fromScratch = false) => {
         if (!prompt.trim()) return;
 
         let finalPrompt = prompt;
         // If we have existing code, append it to the prompt for iterative refinement
-        if (hasGenerated && (dataCode || uiCode)) {
+        // UNLESS we are explicitly starting from scratch
+        if (!fromScratch && hasGenerated && (dataCode || uiCode)) {
             finalPrompt = `
                 Current Data Code:
                 \`\`\`javascript
@@ -179,6 +180,12 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
 
     const currentError = generateError || dataCodeError;
 
+    useEffect(() => {
+        if (currentError) {
+            notify(currentError, 'error');
+        }
+    }, [currentError]);
+
     // Render Helpers
     const renderContent = (id: string) => {
         switch (id) {
@@ -191,7 +198,7 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
                         isConnected={isConnected}
                         hasGenerated={hasGenerated}
                         error={currentError || null}
-                        onGenerate={handleGenerate}
+                        onGenerate={(fromScratch?: boolean) => { void handleGenerate(fromScratch); }}
                         onBack={() => router.push(`/p/${pinId}`)}
                     />
                 );
