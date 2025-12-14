@@ -1,36 +1,38 @@
-app = "pintv-og"
-primary_region = "iad"
+# fly.toml app configuration file generated for pintv-og on 2025-12-14T22:35:29+04:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'pintv-og'
+primary_region = 'iad'
 
 [build]
-  dockerfile = "og/Dockerfile"
-  ignorefile = ".dockerignore"
+  dockerfile = 'og/Dockerfile'
+  ignorefile = '.dockerignore'
 
 [env]
-  PORT = "8080"
-  NODE_ENV = "production"
+  NODE_ENV = 'production'
+  PORT = '8080'
 
 [[services]]
-  protocol = "tcp"
+  protocol = 'tcp'
   internal_port = 8080
 
   [[services.ports]]
     port = 80
-    handlers = ["http"]
+    handlers = ['http']
     force_https = true
 
   [[services.ports]]
     port = 443
-    handlers = ["tls", "http"]
-  
+    handlers = ['tls', 'http']
+
   [services.concurrency]
-    type = "requests"
+    type = 'requests'
     hard_limit = 25
     soft_limit = 20
 
-  [[services.checks]]
-    interval = "10s"
-    timeout = "2s"
-    grace_period = "5s"
-    method = "get"
-    path = "/health"
-    protocol = "http"
+[[vm]]
+  memory = '1gb'
+  cpus = 1
+  memory_mb = 1024
