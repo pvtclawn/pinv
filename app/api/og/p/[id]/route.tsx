@@ -33,6 +33,30 @@ export async function GET(
 
     // 4. Render Dynamic Widget (if available)
     if (pin.widget && pin.widget.reactCode) {
+        // PROXY TO OG ENGINE (If Configured)
+        const ogEngineUrl = process.env.OG_ENGINE_URL;
+        if (ogEngineUrl) {
+            try {
+                // Construct Proxy URL
+                // We forward the pinId and the query string
+                const targetUrl = new URL(`${ogEngineUrl}/og/${pinId}`);
+                searchParams.forEach((val, key) => targetUrl.searchParams.append(key, val));
+
+                const response = await fetch(targetUrl);
+                if (response.ok) {
+                    return new Response(response.body, {
+                        headers: {
+                            'Content-Type': 'image/png',
+                            'Cache-Control': response.headers.get('Cache-Control') || 'public, max-age=60'
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error("OG Proxy Failed:", e);
+                // Fallthrough to legacy safe render
+            }
+        }
+
         try {
             // Merge defaults (previewData) -> Saved Config
             const baseProps: any = {
@@ -53,40 +77,11 @@ export async function GET(
                 });
             }
 
-            // 4.2. Execute Backend Code (Lit Action) to get standard props
-            // This is crucial for dynamic widgets (e.g. Weather) to fetch fresh data based on inputParams
-            let calculatedProps = { ...inputParams };
-
-            if (pin.widget.litActionCode) {
-                try {
-                    // Quick and dirty execution of the "backend" logic in Node
-                    // NOTE: In production, this should be sandboxed (e.g. cloudflare workers, isolated-vm)
-
-                    // The code usually ends with "main" or returns the function. 
-                    // We wrap it to extract the main function.
-                    const backendFn = new Function(
-                        `return (async () => { 
-                            ${pin.widget.litActionCode}
-                            if (typeof main !== 'undefined') return main;
-                            return null;
-                        })()`
-                    );
-
-                    const mainFn = await backendFn();
-                    if (typeof mainFn === 'function') {
-                        console.log(`[OG] Executing backend logic for pin ${pinId} with inputs:`, JSON.stringify(inputParams));
-                        const result = await mainFn(inputParams);
-                        // Merge the result of execution (e.g. temp, wind) into the props passed to React
-                        calculatedProps = { ...calculatedProps, ...result };
-                    }
-                } catch (err) {
-                    console.error("Failed to execute backend code:", err);
-                    // Continue with default props if backend fails
-                }
-            }
+            // [SECURITY] Backend Logic Execution (Lit Action) is REMOVED.
+            // We do not execute untrusted code in this process.
+            const calculatedProps = { ...inputParams };
 
             // 4.3. Render React Widget
-
             // Add standard context
             calculatedProps.viewer_fid = 'preview';
 
