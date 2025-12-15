@@ -37,14 +37,21 @@ import { computeParamsHash } from './lib/params';
 
 const server = fastify({
     logger: true,
-    disableRequestLogging: true
+    disableRequestLogging: false // Enable logging for debugging
 });
 
 // Helper: Stub Image
 function getStubImage(text: string): Buffer {
     try {
-        const stubPath = path.join(__dirname, '../public/hero.png');
-        if (fs.existsSync(stubPath)) return fs.readFileSync(stubPath);
+        // Production vs Dev path handling.
+        // In Docker (prod), assume /app/public/hero.png
+        // In Dev (local), assume ../public/hero.png
+        const prodPath = '/app/public/hero.png';
+        const devPath = path.join(__dirname, '../public/hero.png');
+
+        const imagePath = fs.existsSync(prodPath) ? prodPath : devPath;
+
+        if (fs.existsSync(imagePath)) return fs.readFileSync(imagePath);
     } catch (e) { }
     return Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==', 'base64');
 }

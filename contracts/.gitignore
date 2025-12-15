@@ -8,6 +8,3 @@ broadcast/
 
 # Dependencies
 lib/
-
-# OS specific
-.DS_Store

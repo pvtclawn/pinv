@@ -7,8 +7,8 @@ app = 'pintv-og'
 primary_region = 'iad'
 
 [build]
-  dockerfile = 'og/Dockerfile'
-  ignorefile = '.dockerignore'
+  dockerfile = 'Dockerfile'
+  ignorefile = '../.dockerignore'
 
 [env]
   NODE_ENV = 'production'

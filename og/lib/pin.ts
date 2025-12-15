@@ -1,8 +1,8 @@
 import { createPublicClient, http, zeroAddress } from 'viem';
 import { baseSepolia, base } from 'viem/chains';
 import { pinVConfig, pinVStoreAbi } from './contracts';
-import { fetchFromIpfs } from '@/lib/ipfs';
-import { Pin } from '@/types';
+import { fetchFromIpfs } from '../../lib/ipfs';
+import { Pin } from '../../types';
 
 function getClient() {
     const chainId = process.env.NEXT_PUBLIC_CHAIN_ID || '84532';
