@@ -92,7 +92,7 @@ export function usePreviewRenderer(): UsePreviewRendererReturn {
 
             // 5. Construct OG URL
             const encodedBundle = encodeBundle(bundle);
-            const baseUrl = process.env.NEXT_PUBLIC_OG_URL || 'http://localhost:8080';
+            const baseUrl = process.env.NEXT_PUBLIC_OG_ENGINE_URL || 'http://localhost:8080';
             const url = `${baseUrl}/og/${pinId}?b=${encodedBundle}&sig=${signature}`;
 
             setImageUrl(url);
