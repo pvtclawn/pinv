@@ -1,5 +1,5 @@
 # Syntax: docker/dockerfile:1
-FROM oven/bun:1 AS builder
+FROM oven/bun:1.2.2 AS builder
 
 WORKDIR /app
 
@@ -23,7 +23,7 @@ RUN bun install
 RUN bun run build
 
 # Production Stage
-FROM oven/bun:1 AS runner
+FROM oven/bun:1.2.2 AS runner
 
 WORKDIR /app
 
