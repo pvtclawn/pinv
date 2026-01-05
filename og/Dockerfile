@@ -5,6 +5,9 @@ WORKDIR /app
 
 # Copy root config files
 COPY package.json bun.lock ./
+# Install root dependencies (for shared lib/hooks)
+RUN bun install
+
 # Copy shared code directories
 COPY lib ./lib
 COPY hooks ./hooks
