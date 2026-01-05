@@ -5,3 +5,8 @@ node_modules
 dist
 build
 .env
+
+# Contracts
+contracts/cache
+contracts/out
+contracts/lib
