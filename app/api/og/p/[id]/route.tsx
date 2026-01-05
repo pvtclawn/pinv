@@ -32,7 +32,8 @@ export async function GET(
     }
 
     // 4. Render Dynamic Widget (if available)
-    if (pin.widget && pin.widget.reactCode) {
+    if (pin.widget && pin.widget.uiCode) {
+
         // PROXY TO OG ENGINE (If Configured)
         const ogEngineUrl = process.env.OG_ENGINE_URL;
         if (ogEngineUrl) {
@@ -77,17 +78,13 @@ export async function GET(
                 });
             }
 
-            // [SECURITY] Backend Logic Execution (Lit Action) is REMOVED.
-            // We do not execute untrusted code in this process.
-            const calculatedProps = { ...inputParams };
-
-            // 4.3. Render React Widget
+            // 4.2. Render React Widget
             // Add standard context
-            calculatedProps.viewer_fid = 'preview';
+            const calculatedProps = { ...inputParams, viewer_fid: 'preview' };
 
             const { renderWidget } = await import('@/lib/widget-renderer');
             // @ts-ignore
-            return await renderWidget(pin.widget.reactCode, calculatedProps);
+            return await renderWidget(pin.widget.uiCode, calculatedProps);
         } catch (e) {
             console.error("Failed to render dynamic widget in OG:", e);
             // Fallback to default card

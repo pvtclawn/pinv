@@ -10,23 +10,7 @@ interface UseDataCodeRunnerReturn {
     logs: string[];
 }
 
-/**
- * Creates a proxied fetch function that routes requests through our CORS proxy.
- */
-async function proxiedFetch(url: string, options?: RequestInit) {
-    const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
-    try {
-        const res = await fetch(proxyUrl, options);
-        if (!res.ok) {
-            const text = await res.text();
-            console.error(`[Proxy] Request failed:`, text);
-        }
-        return res;
-    } catch (e) {
-        console.error(`[Proxy] Network error:`, e);
-        throw e;
-    }
-}
+
 
 /**
  * Hook for executing data code in a sandboxed environment.
@@ -64,60 +48,38 @@ export function useDataCodeRunner(): UseDataCodeRunnerReturn {
         setLogs([]); // Clear previous logs
 
         try {
-            // proxiedFetch is now a stable reference
-            const fetchFn = proxiedFetch;
+            // Call OG Engine Directly
+            const ogEngineUrl = process.env.NEXT_PUBLIC_OG_ENGINE_URL || 'http://localhost:8080';
 
-            const capturedLogs: string[] = [];
-            const capturedConsole = {
-                log: (...args: any[]) => {
-                    capturedLogs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
-                    console.log(...args);
-                },
-                error: (...args: any[]) => {
-                    capturedLogs.push('[ERROR] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
-                    console.error(...args);
-                },
-                warn: (...args: any[]) => {
-                    capturedLogs.push('[WARN] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
-                    console.warn(...args);
-                },
-                info: (...args: any[]) => {
-                    capturedLogs.push('[INFO] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
-                    console.info(...args);
-                }
-            };
+            const response = await fetch(`${ogEngineUrl}/execute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, params })
+            });
 
-            // Wrap code in an async IIFE and execute
-            // Inject proxiedFetch as 'fetch' for automatic CORS proxy routing
-            // Inject 'console' to capture logs
-            const executor = new Function('userParams', 'fetch', 'console', `
-                return (async () => {
-                    const jsParams = userParams; // Alias for Lit Action compatibility
-                    
-                    try {
-                        ${code}
-                        
-                        // Check if 'main' was defined and call it
-                        if (typeof main !== 'undefined' && typeof main === 'function') {
-                            return await main(jsParams);
-                        }
-                    } catch (e) {
-                        throw e;
-                    }
-                })()
-            `);
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.details || `Execution failed with status ${response.status}`);
+            }
 
-            const executionResult = await executor(params, fetchFn, capturedConsole);
-            console.log("Data code result:", executionResult);
+            const data = await response.json();
 
-            setResult(executionResult);
-            setLogs(capturedLogs); // Update state with captured logs
-            return executionResult;
+            // Set logs from server
+            if (Array.isArray(data.logs)) {
+                setLogs(data.logs);
+            }
 
-        } catch (err) {
-            const message = err instanceof Error ? err.message : "Execution failed";
-            setError(message);
-            console.error("Data code execution failed:", err);
+            if (data.result) {
+                setResult(data.result);
+                return data.result;
+            }
+
+            return null;
+
+        } catch (err: any) {
+            const errorMessage = err.message || "Unknown error occurred";
+            setError(errorMessage);
+            setLogs(prev => [...prev, `[ERROR] ${errorMessage}`]);
             return null;
         } finally {
             setIsRunning(false);

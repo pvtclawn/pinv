@@ -1,11 +1,8 @@
-import { canonicalizeParams, NormalizedParams } from './params';
+import { canonicalizeParams, NormalizedParams, Bundle } from '@/lib/og-common';
 
-export interface Bundle {
-    ver?: string; // manifest CID
-    params?: NormalizedParams;
-    ts?: number; // timestamp in seconds (or minute bucket)
-}
+// Bundle is now imported from params (which exports * from og-common)
 
+// Re-export Bundle if needed, but here we use it.
 const MAX_BUNDLE_SIZE = 8192; // 8KB limit for bundle
 
 export function parseBundle(b64url: string): Bundle | null {

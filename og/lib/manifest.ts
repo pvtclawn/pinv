@@ -18,12 +18,13 @@ export async function getManifest(ver: string) {
 
         if (data) {
             // Basic validation
-            if (!data.reactCode && !data.uiCode) {
+            if (!data.uiCode) {
                 // Invalid manifest?
             }
             // Normalize
             const manifest = {
-                reactCode: data.reactCode || data.uiCode || '',
+                dataCode: data.dataCode || '',
+                uiCode: data.uiCode || '',
                 previewData: data.previewData || {},
                 parameters: data.parameters || [],
                 userConfig: data.userConfig || {}
@@ -38,8 +39,15 @@ export async function getManifest(ver: string) {
 
             return manifest;
         }
-    } catch (e) {
-        console.error(`Manifest fetch failed for ${ver}:`, e);
+    } catch (e: any) {
+        console.error(`[Manifest Fetch Error] Failed for ver ${ver}:`);
+        console.error(`Error Name: ${e.name}`);
+        console.error(`Error Message: ${e.message}`);
+        console.error(`Error Cause: ${e.cause}`);
+        if (e.response) {
+            console.error(`Response Status: ${e.response.status}`);
+            console.error(`Response Text: ${await e.response.text()}`);
+        }
     }
     return null;
 }

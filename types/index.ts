@@ -1,6 +1,6 @@
 export interface Widget {
-  litActionCode: string;
-  reactCode: string;
+  dataCode: string;
+  uiCode: string;
   parameters: any[];
   previewData: any;
 }
@@ -11,8 +11,8 @@ export interface Pin {
   tagline: string;
   lastUpdated: string;
   widget?: {
-    litActionCode: string;
-    reactCode: string;
+    dataCode: string;
+    uiCode: string;
     parameters: any[];
     previewData: any;
     userConfig?: Record<string, string>;

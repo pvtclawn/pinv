@@ -32,7 +32,7 @@ interface UseWidgetGenerationReturn {
  * const handleSubmit = async () => {
  *   const generated = await generate("Show ETH price");
  *   if (generated) {
- *     // Use generated.litActionCode, generated.reactCode, etc.
+ *     // Use generated.dataCode, generated.uiCode, etc.
  *   }
  * };
  * ```

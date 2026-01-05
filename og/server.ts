@@ -9,6 +9,7 @@ import { getPin } from './lib/pin';
 
 // Load env from root
 dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config({ path: path.join(__dirname, '../.env.local'), override: true });
 
 // Environment & Config
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
@@ -33,12 +34,51 @@ import { parseBundle } from './lib/bundle';
 import { verifySignature } from './lib/sig';
 import { checkOwnership } from './lib/chain';
 import { getManifest } from './lib/manifest';
-import { computeParamsHash } from './lib/params';
+import { computeParamsHash } from '@/lib/og-common';
+
+import { executeLitAction } from './lib/executor';
+
+import cors from '@fastify/cors';
 
 const server = fastify({
     logger: true,
-    disableRequestLogging: false // Enable logging for debugging
+    disableRequestLogging: false
 });
+
+server.register(cors, {
+    origin: true, // Allow all for dev simplicity, or specify ['http://localhost:3000']
+    methods: ['GET', 'POST', 'OPTIONS']
+});
+
+// Endpoint for executing Data Code (Lit Actions)
+server.post('/execute', async (req, reply) => {
+    try {
+        const { code, params } = req.body as { code: string, params: any };
+        if (!code) {
+            return reply.status(400).send({ error: "Missing code" });
+        }
+
+        console.log(`[OG] Executing Data Code...`);
+        // executeLitAction now returns { result, logs }
+        const { result, logs } = await executeLitAction(code, params || {});
+
+        return reply.send({ result, logs });
+    } catch (e: any) {
+        req.log.error(e);
+        return reply.status(500).send({ error: "Execution failed", logs: [e.message] });
+    }
+});
+
+// Log Configuration on Startup
+import { pinVAddress } from './lib/contracts';
+const CHAIN_ID = parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || '84532') as 8453 | 84532;
+const CONTRACT_ADDRESS = pinVAddress[CHAIN_ID] || pinVAddress[84532];
+
+console.log('------------------------------------------------');
+console.log(`[OG Engine] Starting on Port: ${PORT}`);
+console.log(`[OG Engine] Chain ID: ${CHAIN_ID}`);
+console.log(`[OG Engine] Contract Address: ${CONTRACT_ADDRESS}`);
+console.log('------------------------------------------------');
 
 // Helper: Stub Image
 function getStubImage(text: string): Buffer {
@@ -79,7 +119,16 @@ server.get<{ Params: { pinId: string }, Querystring: { b?: string, sig?: string,
             const signer = await verifySignature(pinId, bundle, sig);
             if (signer) {
                 // Verify Ownership
-                const isOwner = await checkOwnership(signer, pinId);
+                // For Drafts (pinId === 0), we skip ownership check and trust the signer
+                // (Permissions validation happens at upload/save time)
+                let isOwner = false;
+                if (pinId === 0) {
+                    server.log.info(`[Auth] Preview Mode (Pin 0): Skipping chain ownership check for ${signer}`);
+                    isOwner = true;
+                } else {
+                    isOwner = await checkOwnership(signer, pinId);
+                }
+
                 if (isOwner) {
                     authorizedBundle = bundle;
                     cacheVer = bundle.ver || 'latest';
@@ -88,10 +137,10 @@ server.get<{ Params: { pinId: string }, Querystring: { b?: string, sig?: string,
                         cacheParamsHash = computeParamsHash(bundle.params);
                     }
                 } else {
-                    server.log.warn(`Signer ${signer} does not own pin ${pinId}`);
+                    server.log.warn(`[Auth] Ownership Failed: Signer ${signer} does not own pin ${pinId}`);
                 }
             } else {
-                server.log.warn(`Invalid signature for pin ${pinId}`);
+                server.log.warn(`[Auth] Signature Verification Failed for pin ${pinId}`);
             }
         }
     } else {
@@ -147,12 +196,24 @@ server.get<{ Params: { pinId: string }, Querystring: { b?: string, sig?: string,
     try {
         // 5. Fetch Pin Data
         // Always fetch base pin data (title, tagline, latest widget) as fallback or base
-        const pin = await getPin(pinId);
+        let pin = null;
+        if (pinId === 0) {
+            // Mock Pin for Preview
+            pin = {
+                id: 0,
+                title: "Preview",
+                tokenURI: "",
+                widget: { uiCode: "", previewData: {}, userConfig: {} }
+            };
+        } else {
+            pin = await getPin(pinId);
+        }
+
         if (!pin) {
             return reply.type('image/png').send(getStubImage('Not Found'));
         }
 
-        let uiCode = pin.widget?.reactCode;
+        let uiCode = pin.widget?.uiCode;
         let baseProps = {
             ...(pin.widget?.previewData || {}),
             ...(pin.widget?.userConfig || {}),
@@ -163,8 +224,8 @@ server.get<{ Params: { pinId: string }, Querystring: { b?: string, sig?: string,
             // If specific version requested, fetch manifest
             if (authorizedBundle.ver) {
                 const manifest = await getManifest(authorizedBundle.ver);
-                if (manifest && manifest.reactCode) {
-                    uiCode = manifest.reactCode;
+                if (manifest && manifest.uiCode) {
+                    uiCode = manifest.uiCode;
                     // Manifest previewData/userConfig overrides? 
                     // Usually manifest contains the CODE and Defaults.
                     baseProps = {
@@ -176,16 +237,32 @@ server.get<{ Params: { pinId: string }, Querystring: { b?: string, sig?: string,
                     // "If ver manifest fetch fails -> Tier A preview (or stub)."
                     // We fall back to `pin.widget` (Tier A) which we already loaded.
                     // We effectively drop the authorized bundle if the manifest is bad.
-                    console.error("Manifest fetch failed, falling back to latest");
+                    console.log("Manifest fetch failed (or missing uiCode), falling back to latest");
                     authorizedBundle = null; // Disable custom params too if ver failed?
                     // Typically if ver fails, params might not match latest code. Safer to fallback fully.
                 }
             }
 
             // Apply params if bundle matches or we are using compatible latest? 
-            // If authorizedBundle is still valid
             if (authorizedBundle && authorizedBundle.params) {
-                baseProps = { ...baseProps, ...authorizedBundle.params };
+                // If we have dataCode (from Manifest or Pin), EXECUTE it with the params
+                // This ensures Server-Side Execution (SSR) matches Preview
+                const dataCode = authorizedBundle.ver ? (await getManifest(authorizedBundle.ver))?.dataCode : pin.widget?.dataCode;
+
+                if (dataCode) {
+                    console.log(`[OG] Executing Data Code for Pin ${pinId}...`);
+                    const { result, logs } = await executeLitAction(dataCode, authorizedBundle.params);
+                    if (result) {
+                        console.log(`[OG] Execution Success`);
+                        baseProps = { ...baseProps, ...result };
+                    } else {
+                        console.warn(`[OG] Execution returned null result`);
+                        // Optionally merge logs into props for on-image debugging?
+                    }
+                } else {
+                    // No data code, just apply params directly to props (Legacy/Simple mode)
+                    baseProps = { ...baseProps, ...authorizedBundle.params };
+                }
             }
         }
 
@@ -224,7 +301,7 @@ server.get<{ Params: { pinId: string }, Querystring: { b?: string, sig?: string,
             setTimeout(() => {
                 child.kill('SIGKILL');
                 resolve(-1);
-            }, 2000);
+            }, 10000);
         });
 
         if (exitCode !== 0) {

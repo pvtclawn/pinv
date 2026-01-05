@@ -11,6 +11,7 @@ import { EditorPrompt } from "./partials/EditorPrompt";
 import { EditorConfig } from "./partials/EditorConfig";
 import { EditorCode } from "./partials/EditorCode";
 import { EditorLogs } from "./partials/EditorLogs";
+import { SavePinButton } from "./partials/SavePinButton";
 import {
     Accordion,
     AccordionContent,
@@ -20,7 +21,7 @@ import {
 import PinDisplayCard from "../viewer/PinDisplayCard";
 
 import { Button } from "@/components/ui/button";
-import { Play, Save, Wand2, Settings2, Code2, TerminalSquare, ChevronLeft } from "lucide-react";
+import { Play, Settings2, Wand2, Code2, TerminalSquare, ChevronLeft } from "lucide-react";
 import { notify } from "@/components/shared/Notifications";
 
 interface PinEditorProps {
@@ -68,12 +69,12 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
     const [tagline, setTagline] = useState(pin?.tagline || "");
 
     const [prompt, setPrompt] = useState("");
-    const [dataCode, setDataCode] = useState(initialWidget?.litActionCode || "");
-    const [uiCode, setUICode] = useState(initialWidget?.reactCode || "");
+    const [dataCode, setDataCode] = useState(initialWidget?.dataCode || "");
+    const [uiCode, setUICode] = useState(initialWidget?.uiCode || "");
     const [parameters, setParameters] = useState<any[]>(initialWidget?.parameters || []);
     const [previewData, setPreviewData] = useState<Record<string, unknown>>(initialWidget?.previewData || {});
 
-    const [hasGenerated, setHasGenerated] = useState(!!(initialWidget && initialWidget.reactCode));
+    const [hasGenerated, setHasGenerated] = useState(!!(initialWidget && initialWidget.uiCode));
 
     // Accordion state - default to 'prompt'
     const [accordionValue, setAccordionValue] = useState("prompt");
@@ -85,10 +86,16 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
 
     // Initialize preview if we have existing code
     useEffect(() => {
-        if (initialWidget && initialWidget.reactCode && initialWidget.previewData) {
-            renderPreview(initialWidget.reactCode, initialWidget.previewData);
+        if (initialWidget && initialWidget.uiCode && initialWidget.previewData) {
+            renderPreview({
+                dataCode: initialWidget.dataCode || '',
+                uiCode: initialWidget.uiCode,
+                previewData: initialWidget.previewData,
+                parameters: initialWidget.parameters || [],
+                userConfig: initialWidget.userConfig
+            }, pinId);
         }
-    }, [initialWidget, renderPreview]);
+    }, [initialWidget, renderPreview, pinId]);
 
 
     // Handle AI generation
@@ -126,7 +133,13 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
             setAccordionValue("config");
 
             // Auto-trigger preview render
-            renderPreview(result.uiCode, result.previewData);
+            renderPreview({
+                dataCode: result.dataCode,
+                uiCode: result.uiCode,
+                previewData: result.previewData,
+                parameters: result.parameters,
+                userConfig: initialWidget?.userConfig // Preserve existing config or empty
+            }, pinId);
         }
     };
 
@@ -138,44 +151,25 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
             userParams[p.name] = previewData[p.name];
         });
 
-        const result = await runDataCode(dataCode, userParams);
-        if (result) {
-            // Re-render preview with live data
-            renderPreview(uiCode, result);
-        }
-    };
+        // 1. Run Client-Side (Log Only)
+        // We run this to show logs to the user, but we DON'T block update on failure.
+        // The Server will re-run this to generate the image.
+        runDataCode(dataCode, userParams).then((result) => {
+            if (!result) {
+                notify("Client execution logs empty (Server will retry for image)", "warning");
+            }
+        });
 
-    // Handle save
-    const handleSave = async () => {
-        if (!hasGenerated) return;
-
-        try {
-            const savePayload = {
-                title,
-                tagline,
-                widget: {
-                    litActionCode: dataCode,
-                    reactCode: uiCode,
-                    parameters,
-                    previewData,
-                    userConfig: previewData,
-                }
-            };
-
-            const res = await fetch(`/api/pins/${pinId}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(savePayload),
-            });
-
-            if (!res.ok) throw new Error("Failed to save pin");
-
-            router.push(`/p/${pinId}`);
-            router.refresh();
-        } catch (e) {
-            console.error("Save failed:", e);
-            alert("Failed to save pin. Check console.");
-        }
+        // 2. Trigger Preview Update (Start IPFS Upload & Sign)
+        // We pass 'userParams' (INPUTS), not 'result' (OUTPUTS).
+        // The Server will execute DataCode(Inputs) -> Outputs.
+        renderPreview({
+            dataCode: dataCode,
+            uiCode: uiCode,
+            previewData: userParams, // PASS INPUTS!
+            parameters: parameters,
+            userConfig: initialWidget?.userConfig
+        }, pinId);
     };
 
     const currentError = generateError || dataCodeError;
@@ -259,14 +253,17 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
                                 >
                                     UPDATE
                                 </Button>
-                                <Button
-                                    onClick={handleSave}
+                                <SavePinButton
+                                    pinId={pinId}
+                                    title={title}
+                                    tagline={tagline}
+                                    uiCode={uiCode}
+                                    dataCode={dataCode}
+                                    parameters={parameters}
+                                    previewData={previewData}
                                     disabled={!hasGenerated || isDataCodeRunning}
                                     className="w-full h-10 font-bold tracking-wider"
-                                    icon={Save}
-                                >
-                                    SAVE
-                                </Button>
+                                />
                             </div>
                         </div>
                     </PinDisplayCard>

@@ -1,5 +1,5 @@
 # dependencies
-/node_modules
+node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -48,4 +48,13 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+
+local/
 *.log
+
+# Contracts
+contracts/lib/
+contracts/out/
+contracts/broadcast/
+contracts/cache/
+

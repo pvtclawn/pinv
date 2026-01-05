@@ -28,7 +28,7 @@ A dedicated, sandboxed service for rendering PinV widget thumbnails.
    curl http://localhost:8080/health
 
    # Render specific pin
-   curl -v "http://localhost:8080/og/123.png" > output.png
+   curl -v "http://localhost:8080/og/123" > output.png
    ```
 
 ## Deployment

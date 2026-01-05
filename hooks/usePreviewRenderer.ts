@@ -1,50 +1,47 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useWalletClient, useAccount, useChainId } from "wagmi";
+import { signBundle, encodeBundle, Bundle } from "@/lib/bundle-utils";
+
+interface ManifestData {
+    dataCode: string;
+    uiCode: string;
+    previewData: any;
+    parameters: any[];
+    userConfig?: any;
+}
 
 interface UsePreviewRendererReturn {
-    render: (code: string, props: Record<string, unknown>) => Promise<string | null>;
+    render: (data: ManifestData, pinId: number) => Promise<string | null>;
     isLoading: boolean;
     imageUrl: string | null;
     error: string | null;
 }
 
 /**
- * Hook for rendering widget previews via the preview-widget API.
- * Manages blob URLs and cleans them up on unmount.
- * 
- * @example
- * ```tsx
- * const { render, isLoading, imageUrl } = usePreviewRenderer();
- * 
- * // Render preview
- * await render(reactCode, previewData);
- * 
- * // Use imageUrl in an img tag
- * <img src={imageUrl} />
- * ```
+ * Hook for rendering widget previews via the OG Engine (IPFS + Signed Bundle).
+ * This ensures consistency with the production workflow.
  */
 export function usePreviewRenderer(): UsePreviewRendererReturn {
     const [isLoading, setIsLoading] = useState(false);
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const currentBlobUrl = useRef<string | null>(null);
-
-    // Cleanup blob URL on unmount
-    useEffect(() => {
-        return () => {
-            if (currentBlobUrl.current) {
-                URL.revokeObjectURL(currentBlobUrl.current);
-            }
-        };
-    }, []);
+    const { data: walletClient } = useWalletClient();
+    const { address } = useAccount();
+    const chainId = useChainId();
 
     const render = useCallback(async (
-        code: string,
-        props: Record<string, unknown>
+        data: ManifestData,
+        pinId: number
     ): Promise<string | null> => {
-        if (!code.trim()) {
+        if (!data.uiCode.trim()) {
             setError("No code provided for preview");
+            return null;
+        }
+
+        if (!walletClient || !address) {
+            setError("Wallet not connected. Please connect to sign the preview bundle.");
             return null;
         }
 
@@ -52,25 +49,52 @@ export function usePreviewRenderer(): UsePreviewRendererReturn {
         setError(null);
 
         try {
-            const response = await fetch('/api/preview-widget', {
+            // 1. Get Signed Upload URL
+            const tokenRes = await fetch('/api/pinata-token');
+            if (!tokenRes.ok) throw new Error("Failed to get upload token");
+            const { url: uploadUrl } = await tokenRes.json();
+
+            // 2. Upload to Pinata via Signed URL
+            // Ensure we upload as a File or Blob with correct type
+            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+            const file = new File([blob], "preview.json", { type: "application/json" });
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const uploadRes = await fetch(uploadUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code, props }),
+                body: formData,
+                // Do not set Content-Type header manually; fetch will set multipart/form-data with boundary
             });
 
-            if (!response.ok) {
-                throw new Error(`Preview render failed (${response.status})`);
+            if (!uploadRes.ok) {
+                throw new Error(`Upload failed: ${uploadRes.statusText}`);
             }
 
-            const blob = await response.blob();
+            // Note: The direct upload response depends on Pinata's API.
+            // For signed URLs (v3), it returns { data: { cid: ... } }
+            // For older APIs, it might returns { IpfsHash: ... }
+            const uploadData = await uploadRes.json();
+            const cid = uploadData?.data?.cid || uploadData?.IpfsHash;
 
-            // Revoke previous blob URL if exists
-            if (currentBlobUrl.current) {
-                URL.revokeObjectURL(currentBlobUrl.current);
-            }
+            if (!cid) throw new Error("No CID returned from signed upload");
 
-            const url = URL.createObjectURL(blob);
-            currentBlobUrl.current = url;
+            // 3. Create Bundle
+            const bundle: Bundle = {
+                ver: cid,
+                params: data.previewData || {},
+                ts: Math.floor(Date.now() / 1000)
+            };
+
+            // 4. Sign Bundle
+            const signature = await signBundle(walletClient, address, pinId, bundle, chainId);
+
+            // 5. Construct OG URL
+            const encodedBundle = encodeBundle(bundle);
+            const baseUrl = process.env.NEXT_PUBLIC_OG_URL || 'http://localhost:8080';
+            const url = `${baseUrl}/og/${pinId}?b=${encodedBundle}&sig=${signature}`;
+
             setImageUrl(url);
             return url;
 
@@ -82,7 +106,7 @@ export function usePreviewRenderer(): UsePreviewRendererReturn {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [walletClient, address, chainId]);
 
     return {
         render,
