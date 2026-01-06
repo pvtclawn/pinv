@@ -47,7 +47,8 @@ const server = fastify({
 
 server.register(cors, {
     origin: true, // Allow all for dev simplicity, or specify ['http://localhost:3000']
-    methods: ['GET', 'POST', 'OPTIONS']
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type']
 });
 
 // Endpoint for executing Data Code (Lit Actions)
