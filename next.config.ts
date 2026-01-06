@@ -50,7 +50,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
-  allowedDevOrigins: ["welcome-primate-specially.ngrok-free.app", "pinv.app"],
+  allowedDevOrigins: ["welcome-primate-specially.ngrok-free.app", "pinv.app", "localhost:3000"],
   async headers() {
     return [
       {

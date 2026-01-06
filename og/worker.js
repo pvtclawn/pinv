@@ -54,6 +54,48 @@ async function run() {
                 }
                 props = { ...props, style: newStyle };
             }
+
+            const baseUrl = input.baseUrl || 'http://localhost:3000';
+
+            // AUTO-FIX: Resolve relative image URLs for Satori (img tags)
+            if (type === 'img' && props) {
+                if (!props.src || typeof props.src !== 'string') {
+                    // Start of Stub: Satori crashes on missing src. Provide transparent pixel.
+                    props = { ...props, src: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' };
+                } else if (props.src.startsWith('/')) {
+                    props = { ...props, src: `${baseUrl}${props.src}` };
+                }
+            }
+
+            // AUTO-FIX: Resolve relative image URLs in backgroundImage
+            if (props && props.style && props.style.backgroundImage) {
+                const bg = props.style.backgroundImage;
+                if (typeof bg === 'string') {
+                    // Handle url(...) wrapper
+                    // Basic match for url('...') or url("...") or url(...)
+                    const urlMatch = bg.match(/url\(['"]?([^'"]+)['"]?\)/);
+                    if (urlMatch) {
+                        const rawUrl = urlMatch[1];
+
+                        // Check for common bad values
+                        if (rawUrl === 'undefined' || rawUrl === 'null' || !rawUrl) {
+                            // If undefined/null, DELETE the background image style to avoid crash
+                            const newStyle = { ...props.style };
+                            delete newStyle.backgroundImage;
+                            props = { ...props, style: newStyle };
+                        } else if (rawUrl.startsWith('/')) {
+                            const newUrl = `${baseUrl}${rawUrl}`;
+                            props = {
+                                ...props,
+                                style: {
+                                    ...props.style,
+                                    backgroundImage: `url('${newUrl}')`
+                                }
+                            };
+                        }
+                    }
+                }
+            }
             return React.createElement(type, props, ...children);
         };
 

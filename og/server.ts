@@ -16,6 +16,7 @@ const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 const CACHE_TTL = 60; // 1 minute
 const LOCK_TTL = 10;
 const PORT = parseInt(process.env.PORT || '8080');
+const TIMESTAMP_BUCKET_MS = parseInt(process.env.TIMESTAMP_BUCKET_MS || '2000'); // 2 seconds bucketing
 
 // Initialize Redis with timeout to avoid hanging dev
 const redis = new Redis(REDIS_URL, {
@@ -97,6 +98,19 @@ function getStubImage(text: string): Buffer {
     return Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==', 'base64');
 }
 
+// Helper: Poll for Cache
+async function pollForCache(key: string, interval: number = 500, timeout: number = 10000): Promise<Buffer | null> {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+        try {
+            const cached = await redis.getBuffer(key);
+            if (cached) return cached;
+        } catch (e) { }
+        await new Promise(resolve => setTimeout(resolve, interval));
+    }
+    return null;
+}
+
 // Route
 server.get<{ Params: { pinId: string }, Querystring: { b?: string, sig?: string, params?: string, ver?: string, ts?: string, tokenId?: string } }>('/og/:pinId', async (request, reply) => {
     const pinId = parseInt(request.params.pinId);
@@ -113,54 +127,79 @@ server.get<{ Params: { pinId: string }, Querystring: { b?: string, sig?: string,
 
     // 1. Parse & Verify Bundle (if present)
     // Only attempt if both b and sig are present (Compact Format)
-    if (b && sig) {
+    // 1. Parse & Verify Bundle (if present)
+    if (b) {
         const bundle = parseBundle(b);
         if (bundle) {
-            // Verify Signature
-            const signer = await verifySignature(pinId, bundle, sig);
-            if (signer) {
-                // Verify Ownership
-                // For Drafts (pinId === 0), we skip ownership check and trust the signer
-                // (Permissions validation happens at upload/save time)
-                let isOwner = false;
-                if (pinId === 0) {
-                    server.log.info(`[Auth] Preview Mode (Pin 0): Skipping chain ownership check for ${signer}`);
-                    isOwner = true;
-                } else {
-                    isOwner = await checkOwnership(signer, pinId);
-                }
+            if (sig) {
+                // Verify Signature
+                const signer = await verifySignature(pinId, bundle, sig);
+                if (signer) {
+                    // Verify Ownership (Strict Mode)
+                    let isOwner = false;
+                    if (pinId === 0) {
+                        server.log.info(`[Auth] Preview Mode (Pin 0): Skipping chain ownership check for ${signer}`);
+                        isOwner = true;
+                    } else {
+                        isOwner = await checkOwnership(signer, pinId);
+                    }
 
-                if (isOwner) {
-                    server.log.info(`[Auth] Bundle authorized for pin ${pinId} by ${signer}`);
-                    authorizedBundle = bundle;
-                    cacheVer = bundle.ver || 'latest';
-                    cacheTs = bundle.ts ? String(bundle.ts) : '';
-                    if (bundle.params) {
-                        cacheParamsHash = computeParamsHash(bundle.params);
+                    if (isOwner) {
+                        server.log.info(`[Auth] Bundle authorized for pin ${pinId} by ${signer}`);
+                        authorizedBundle = bundle;
+                        cacheVer = bundle.ver || 'latest';
+                        cacheTs = bundle.ts ? String(bundle.ts) : '';
+                        if (bundle.params) {
+                            cacheParamsHash = computeParamsHash(bundle.params);
+                        }
+                    } else {
+                        server.log.warn(`[Auth] Ownership Failed: Signer ${signer} does not own pin ${pinId}`);
                     }
                 } else {
-                    server.log.warn(`[Auth] Ownership Failed: Signer ${signer} does not own pin ${pinId}`);
+                    server.log.warn(`[Auth] Signature Verification Failed for pin ${pinId}`);
                 }
             } else {
-                server.log.warn(`[Auth] Signature Verification Failed for pin ${pinId}`);
+                // Unsigned Bundle (User Request: "No need for security for now!")
+                // valid for public viewing if we just want to render the manifest + params
+                server.log.info(`[Auth] Unsigned Bundle accepted for Pin ${pinId}`);
+                authorizedBundle = bundle;
+                cacheVer = bundle.ver || 'latest';
+                cacheTs = bundle.ts ? String(bundle.ts) : '';
+                if (bundle.params) {
+                    cacheParamsHash = computeParamsHash(bundle.params);
+                }
             }
         }
-    } else {
-        // Legacy/Direct Query Params support (optional, if we want to support ver/params without bundle?)
-        // Requirement says: "If verify signed public params... If verification fails -> return stub... or default non-custom image"
-        // Also: "Backward compatibility... keep it for now, but canonicalize internally"
-        // For strict security per "Updated Model", we ONLY accept signed custom params.
-        // Unsigned params are ignored (Tier A).
-
-        // We do typically ignore params if not signed.
     }
 
     // 2. Compute Cache Key
-    // cacheKey = sha256("og|tokenId|ver|paramsHash|ts")
-    // We'll just use a colon-separated string for simplicity unless it gets too long
-    const cacheKeyRaw = `og:${pinId}:${cacheVer}:${cacheParamsHash}:${cacheTs}`;
-    // Simple hash to keep redis keys short? Or raw string. 
-    // Requirement says: "Example: cacheKey = sha256(...)"
+    // cacheParamsHash for Bundle is already computed.
+    // We need to mix in Overrides (for Unbundled/Stored Pin requests)
+    let overridesHash = '';
+    const queryParams = request.query as Record<string, string>;
+    const overrides: Record<string, string> = {};
+    const reservedKeys = ['b', 'sig', 'ver', 'ts', 'tokenId'];
+    // Re-extract overrides here to ensure availability for cache key
+    Object.keys(queryParams).forEach(key => {
+        if (!reservedKeys.includes(key)) {
+            // Apply bucketing to timestamp 't' if configured
+            if (key === 't' && TIMESTAMP_BUCKET_MS > 0) {
+                const ts = parseInt(queryParams[key]);
+                if (!isNaN(ts)) {
+                    overrides[key] = String(Math.floor(ts / TIMESTAMP_BUCKET_MS) * TIMESTAMP_BUCKET_MS);
+                    return;
+                }
+            }
+            overrides[key] = queryParams[key];
+        }
+    });
+
+    if (Object.keys(overrides).length > 0) {
+        overridesHash = computeParamsHash(overrides);
+    }
+
+    // cacheKey = sha256("og:v2|tokenId|ver|paramsHash|overridesHash|ts")
+    const cacheKeyRaw = `og:v2:${pinId}:${cacheVer}:${cacheParamsHash}:${overridesHash}:${cacheTs}`;
     const { createHash } = await import('crypto');
     const cacheKey = createHash('sha256').update(cacheKeyRaw).digest('hex');
 
@@ -190,7 +229,18 @@ server.get<{ Params: { pinId: string }, Querystring: { b?: string, sig?: string,
     try {
         const acquired = await redis.set(lockKey, '1', 'EX', LOCK_TTL, 'NX');
         if (!acquired) {
+            console.log(`[OG] Lock Contention for ${cacheKey}. Polling for result...`);
+            const polledResult = await pollForCache(cacheKey);
+            if (polledResult) {
+                console.log(`[OG] Polling Success: Retrieved cached result for ${cacheKey}`);
+                memoryCache.set(cacheKey, { data: polledResult, expires: Date.now() + 60000 });
+                reply.header('Content-Type', 'image/png');
+                reply.header('X-Cache', 'HIT-POLL');
+                return reply.send(polledResult);
+            }
+
             // Anti-stampede: Return stub or stale if we had one (we don't here)
+            console.warn(`[OG] Returning Stub: Rendering in progress (Lock Contention for key ${cacheKey})`);
             return reply.type('image/png').send(getStubImage('Rendering...'));
         }
     } catch (e) { }
@@ -222,53 +272,79 @@ server.get<{ Params: { pinId: string }, Querystring: { b?: string, sig?: string,
         };
 
         // 6. Apply Authorized Bundle (Versioned Manifest + Params)
+        // OR Standard Execution for Stored Pin
+
+        // 6a. Extract Query Params as Overrides (for Viewer interactivity)
+        const queryParams = request.query as Record<string, string>;
+        const overrides: Record<string, string> = {};
+        const reservedKeys = ['b', 'sig', 'ver', 'ts', 'tokenId', 't'];
+        Object.keys(queryParams).forEach(key => {
+            if (!reservedKeys.includes(key)) {
+                overrides[key] = queryParams[key];
+            }
+        });
+
         if (authorizedBundle) {
-            // If specific version requested, fetch manifest
+            // ... (Bundle logic remains similar, but we should also respect overrides if secure?)
+            // For now, Bundle takes precedence for versioning, but we might want overrides on top?
+            // If it's a signed bundle, we usually want EXACT reproduction.
+            // But if it's an unsigned bundle (preview), we might want overrides.
+
+            // Existing Bundle Logic:
             if (authorizedBundle.ver) {
                 const manifest = await getManifest(authorizedBundle.ver);
                 if (manifest && manifest.uiCode) {
                     uiCode = manifest.uiCode;
-                    // Manifest previewData/userConfig overrides? 
-                    // Usually manifest contains the CODE and Defaults.
                     baseProps = {
                         ...(manifest.previewData || {}),
                         ...(manifest.userConfig || {}),
                     };
                 } else {
-                    // Start of fallback: If manifest fetch fails, what do we do?
-                    // "If ver manifest fetch fails -> Tier A preview (or stub)."
-                    // We fall back to `pin.widget` (Tier A) which we already loaded.
-                    // We effectively drop the authorized bundle if the manifest is bad.
-                    console.log("Manifest fetch failed (or missing uiCode), falling back to latest");
-                    authorizedBundle = null; // Disable custom params too if ver failed?
-                    // Typically if ver fails, params might not match latest code. Safer to fallback fully.
+                    console.log("Manifest fetch failed, falling back to latest");
+                    authorizedBundle = null; // Fallback to pin
                 }
             }
 
-            // Apply params if bundle matches or we are using compatible latest? 
             if (authorizedBundle && authorizedBundle.params) {
-                // If we have dataCode (from Manifest or Pin), EXECUTE it with the params
-                // This ensures Server-Side Execution (SSR) matches Preview
                 const dataCode = authorizedBundle.ver ? (await getManifest(authorizedBundle.ver))?.dataCode : pin.widget?.dataCode;
+                const paramsToRun = { ...authorizedBundle.params, ...overrides }; // Allow overrides on bundle?
 
                 if (dataCode) {
-                    console.log(`[OG] Executing Data Code for Pin ${pinId}...`);
-                    const { result, logs } = await executeLitAction(dataCode, authorizedBundle.params);
+                    console.log(`[OG] Executing Data Code for Bundle Pin ${pinId}...`);
+                    const { result, logs } = await executeLitAction(dataCode, paramsToRun);
                     if (result) {
-                        console.log(`[OG] Execution Success`);
+                        // Merge result. result usually contains { temperature: 20 }. 
+                        // baseProps might contain inputs. result overwrites/augments them.
                         baseProps = { ...baseProps, ...result };
-                    } else {
-                        console.warn(`[OG] Execution returned null result`);
-                        // Optionally merge logs into props for on-image debugging?
                     }
                 } else {
-                    // No data code, just apply params directly to props (Legacy/Simple mode)
                     baseProps = { ...baseProps, ...authorizedBundle.params };
                 }
+            }
+        } else {
+            // 6b. Standard Stored Pin Execution (The Fix for Viewer)
+            // Use stored dataCode and previewData + Overrides
+            const dataCode = pin.widget?.dataCode;
+            const storedParams = pin.widget?.previewData || {};
+            const paramsToRun = { ...storedParams, ...overrides };
+
+            if (dataCode) {
+                console.log(`[OG] Executing Stored Data Code for Pin ${pinId}...`);
+                const { result, logs } = await executeLitAction(dataCode, paramsToRun);
+                if (result) {
+                    console.log(`[OG] Stored Execution Success`);
+                    baseProps = { ...baseProps, ...result };
+                } else {
+                    console.warn(`[OG] Stored Execution returned null result`);
+                }
+            } else {
+                // No data code, just pass params
+                baseProps = { ...baseProps, ...paramsToRun };
             }
         }
 
         if (!uiCode) {
+            console.warn(`[OG] Returning Stub: No UI Code found for Pin ${pinId}`);
             return reply.type('image/png').send(getStubImage('No Code'));
         }
 
@@ -289,7 +365,14 @@ server.get<{ Params: { pinId: string }, Querystring: { b?: string, sig?: string,
             stdio: ['pipe', 'pipe', 'pipe']
         });
 
-        const inputPayload = JSON.stringify({ uiCode, props, width, height });
+        const inputPayload = JSON.stringify({
+            uiCode,
+            props,
+            width,
+            height,
+            baseUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+        });
+
         child.stdin.write(inputPayload);
         child.stdin.end();
 
@@ -309,8 +392,10 @@ server.get<{ Params: { pinId: string }, Querystring: { b?: string, sig?: string,
 
         if (exitCode !== 0) {
             const errorOutput = Buffer.concat(errChunks).toString();
-            console.error('[Worker Error]', errorOutput);
-            throw new Error(`Worker failed or timed out: ${errorOutput}`);
+            console.error(`[OG] Worker failed with code ${exitCode}: ${errorOutput}`);
+            if (uiCode) fs.writeFileSync(path.join(__dirname, 'debug_payload.txt'), uiCode);
+            console.warn(`[OG] Returning Stub: Render Error (Worker Exit Code ${exitCode})`);
+            return reply.type('image/png').send(getStubImage('Render Error'));
         }
 
         const pngBuffer = Buffer.concat(chunks);
@@ -327,8 +412,9 @@ server.get<{ Params: { pinId: string }, Querystring: { b?: string, sig?: string,
         return reply.send(pngBuffer);
 
     } catch (e) {
-        server.log.error(e);
-        return reply.type('image/png').send(getStubImage('Error'));
+        console.error(e);
+        console.warn(`[OG] Returning Stub: Server Error (${(e as Error).message})`);
+        return reply.type('image/png').send(getStubImage('Server Error'));
     } finally {
         try { await redis.del(lockKey); } catch (e) { }
     }

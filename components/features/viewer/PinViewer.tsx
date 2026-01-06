@@ -47,9 +47,9 @@ export default function PinViewer({ pin, pinId, initialParams }: PinViewerProps)
 
     // Update URLs when values change
     useEffect(() => {
-        setPreviewUrl(buildOgUrl(pinId, debouncedValues, true));
+        setPreviewUrl(buildOgUrl(pinId, debouncedValues, true, pin));
         setShareUrl(buildShareUrl(pinId, values));
-    }, [debouncedValues, values, pinId]);
+    }, [debouncedValues, values, pinId, pin]);
 
     const parameters = pin.widget?.parameters || [];
     const visibleParameters = parameters.filter((p: any) => !p.hidden);

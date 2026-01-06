@@ -13,6 +13,8 @@ export async function GET(
     const { id: idStr } = await params;
     const pinId = parseInt(idStr);
 
+    let renderError = "";
+
     // Default pin data
     let pin = await getPin(pinId) || {
         title: 'Pin Not Found',
@@ -31,11 +33,16 @@ export async function GET(
         };
     }
 
+    console.log(`[OG Debug] Processing PinID: ${pinId}`);
+    console.log(`[OG Debug] Pin Title: ${pin?.title}, Has Widget: ${!!pin?.widget}, Has UI Code: ${!!pin?.widget?.uiCode}`);
+
     // 4. Render Dynamic Widget (if available)
     if (pin.widget && pin.widget.uiCode) {
 
         // PROXY TO OG ENGINE (If Configured)
         const ogEngineUrl = process.env.NEXT_PUBLIC_OG_ENGINE_URL;
+        console.log(`[OG Debug] OG Engine URL: ${ogEngineUrl}`);
+
         if (ogEngineUrl) {
             try {
                 // Construct Proxy URL
@@ -43,7 +50,11 @@ export async function GET(
                 const targetUrl = new URL(`${ogEngineUrl}/og/${pinId}`);
                 searchParams.forEach((val, key) => targetUrl.searchParams.append(key, val));
 
+                console.log(`[OG Debug] Proxying to: ${targetUrl.toString()}`);
+
                 const response = await fetch(targetUrl);
+                console.log(`[OG Debug] Proxy Response Status: ${response.status}`);
+
                 if (response.ok) {
                     return new Response(response.body, {
                         headers: {
@@ -53,43 +64,17 @@ export async function GET(
                     });
                 }
             } catch (e) {
-                console.error("OG Proxy Failed:", e);
+                console.error("[OG Debug] OG Proxy Failed:", e);
                 // Fallthrough to legacy safe render
             }
         }
 
-        try {
-            // Merge defaults (previewData) -> Saved Config
-            const baseProps: any = {
-                ...(pin.widget.previewData || {}),
-                ...(pin.widget.userConfig || {}),
-            };
+        // If Proxy fails or is not configured, we do NOT fall back to local execution.
+        // Local execution (new Function) is unsafe in the main app context.
+        console.log("[OG Debug] OG Engine Proxy failed or skipped. Returning static fallback.");
 
-            // 4.1. Determine Input Parameters
-            const inputParams = { ...baseProps }; // Start with merged config/defaults
-
-            // Override with query params if allowed
-            if (pin.widget.parameters) {
-                pin.widget.parameters.forEach((param: any) => {
-                    const queryValue = searchParams.get(param.name);
-                    if (queryValue) {
-                        inputParams[param.name] = queryValue;
-                    }
-                });
-            }
-
-            // 4.2. Render React Widget
-            // Add standard context
-            const calculatedProps = { ...inputParams, viewer_fid: 'preview' };
-
-            const { renderWidget } = await import('@/lib/widget-renderer');
-            // @ts-ignore
-            return await renderWidget(pin.widget.uiCode, calculatedProps);
-        } catch (e) {
-            console.error("Failed to render dynamic widget in OG:", e);
-            // Fallback to default card
-        }
     } else {
+        console.log("[OG Debug] Skipping Render: No Widget or UI Code");
     }
 
     return new ImageResponse(
@@ -132,7 +117,7 @@ export async function GET(
                         }}
                     >
                         <div style={{ display: 'flex', fontSize: 48, textAlign: 'center', marginBottom: 20 }}>
-                            {pin.tagline || 'No description available'}
+                            {renderError ? `Error: ${renderError}` : (pin.tagline || 'No description available')}
                         </div>
 
                         <div style={{ display: 'flex', fontSize: 24, opacity: 0.6, marginTop: 40, alignItems: 'center', gap: '10px' }}>
@@ -142,7 +127,7 @@ export async function GET(
                                 <path d="M3 9h18" />
                                 <path d="M9 21V9" />
                             </svg>
-                            <span>Preview Unavailable</span>
+                            <span>Preview Unavailable ({pin.widget ? 'W' : 'NoW'}/{pin.widget?.uiCode ? 'C' : 'NoC'}) {renderError}</span>
                         </div>
                     </div>
 

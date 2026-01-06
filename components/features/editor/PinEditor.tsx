@@ -6,6 +6,7 @@ import { useAccount } from "wagmi";
 import { Pin } from "@/types";
 import { useWidgetGeneration, useDataCodeRunner, usePreviewRenderer } from "@/hooks";
 import { cn } from "@/lib/utils";
+import { encodeBundle } from "@/lib/bundle-utils";
 
 import { EditorPrompt } from "./partials/EditorPrompt";
 import { EditorConfig } from "./partials/EditorConfig";
@@ -21,7 +22,7 @@ import {
 import PinDisplayCard from "../viewer/PinDisplayCard";
 
 import { Button } from "@/components/ui/button";
-import { Play, Settings2, Wand2, Code2, TerminalSquare, ChevronLeft } from "lucide-react";
+import { Play, Settings2, Wand2, Code2, TerminalSquare, ChevronLeft, Loader2 } from "lucide-react";
 import { notify } from "@/components/shared/Notifications";
 
 interface PinEditorProps {
@@ -73,29 +74,89 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
     const [uiCode, setUICode] = useState(initialWidget?.uiCode || "");
     const [parameters, setParameters] = useState<any[]>(initialWidget?.parameters || []);
     const [previewData, setPreviewData] = useState<Record<string, unknown>>(initialWidget?.previewData || {});
+    const [cachedImageUrl, setCachedImageUrl] = useState<string | null>(null);
 
     const [hasGenerated, setHasGenerated] = useState(!!(initialWidget && initialWidget.uiCode));
 
-    // Accordion state - default to 'prompt'
-    const [accordionValue, setAccordionValue] = useState("prompt");
+    // State for the LAST confirmed/previewed state (Sticky Preview)
+    // We only enable save if the CURRENT editor state matches this exactly.
+    const [lastPreviewedState, setLastPreviewedState] = useState<{
+        uiCode: string;
+        dataCode: string;
+        parameters: any[];
+        previewData: any;
+        cid: string;
+        signature?: string;
+        timestamp?: number;
+    } | null>(null);
+
+    // Accordion state - default to 'config'
+    const [accordionValue, setAccordionValue] = useState("config");
 
     // Extracted hooks
     const { generate, isGenerating, error: generateError } = useWidgetGeneration();
     const { run: runDataCode, isRunning: isDataCodeRunning, error: dataCodeError, logs } = useDataCodeRunner();
     const { render: renderPreview, isLoading: isPreviewLoading, imageUrl: previewImageUrl } = usePreviewRenderer();
 
+    // Derived Dirty State
+    // Check if current editor values differ from the last previewed values
+    const isDirty = !lastPreviewedState ||
+        lastPreviewedState.uiCode !== uiCode ||
+        lastPreviewedState.dataCode !== dataCode ||
+        JSON.stringify(lastPreviewedState.parameters) !== JSON.stringify(parameters) ||
+        JSON.stringify(lastPreviewedState.previewData) !== JSON.stringify(previewData);
+
     // Initialize preview if we have existing code
     useEffect(() => {
         if (initialWidget && initialWidget.uiCode && initialWidget.previewData) {
-            renderPreview({
-                dataCode: initialWidget.dataCode || '',
-                uiCode: initialWidget.uiCode,
-                previewData: initialWidget.previewData,
-                parameters: initialWidget.parameters || [],
-                userConfig: initialWidget.userConfig
-            }, pinId);
+            // OPTIMIZATION: If we have a persisted signature, timestamp, and version (CID),
+            // we can reconstruct the URL directly without re-signing!
+            if (pin?.version && initialWidget.signature && initialWidget.timestamp) {
+                const bundle = {
+                    ver: pin.version,
+                    params: initialWidget.previewData || {},
+                    ts: initialWidget.timestamp
+                };
+                const encodedBundle = encodeBundle(bundle);
+                // Use Application Proxy instead of Direct OG Engine URL to avoid AD-BLOCK/Brave Blocking
+                // const baseUrl = process.env.NEXT_PUBLIC_OG_ENGINE_URL || 'http://localhost:8080';
+                const baseUrl = `/api/og/p/${pinId}`;
+                const url = `${baseUrl}?b=${encodedBundle}&sig=${initialWidget.signature}&t=${Date.now()}`;
+
+                setCachedImageUrl(url);
+                setLastPreviewedState({
+                    uiCode: initialWidget.uiCode,
+                    dataCode: initialWidget.dataCode || '',
+                    parameters: initialWidget.parameters || [],
+                    previewData: initialWidget.previewData,
+                    cid: pin.version,
+                    signature: initialWidget.signature,
+                    timestamp: initialWidget.timestamp
+                });
+            } else {
+                // Fallback: Re-generate preview (requires wallet signature)
+                renderPreview({
+                    dataCode: initialWidget.dataCode || '',
+                    uiCode: initialWidget.uiCode,
+                    previewData: initialWidget.previewData,
+                    parameters: initialWidget.parameters || [],
+                    userConfig: initialWidget.userConfig
+                }, pinId, pin?.version).then((res) => {
+                    if (res && res.cid) {
+                        setLastPreviewedState({
+                            uiCode: initialWidget.uiCode,
+                            dataCode: initialWidget.dataCode || '',
+                            parameters: initialWidget.parameters || [],
+                            previewData: initialWidget.previewData,
+                            cid: res.cid,
+                            signature: res.signature || undefined,
+                            timestamp: res.timestamp || undefined
+                        });
+                    }
+                });
+            }
         }
-    }, [initialWidget, renderPreview, pinId]);
+    }, [initialWidget, renderPreview, pinId, pin?.version]);
 
 
     // Handle AI generation
@@ -139,26 +200,31 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
                 previewData: result.previewData,
                 parameters: result.parameters,
                 userConfig: initialWidget?.userConfig // Preserve existing config or empty
-            }, pinId);
+            }, pinId, pin?.version).then((res) => {
+                if (res && res.cid) {
+                    setLastPreviewedState({
+                        uiCode: result.uiCode,
+                        dataCode: result.dataCode || '',
+                        parameters: result.parameters || [],
+                        previewData: result.previewData || {},
+                        cid: res.cid,
+                        signature: res.signature || undefined,
+                        timestamp: res.timestamp || undefined
+                    });
+                }
+            });
         }
     };
 
-    // Handle Lit Action execution  
-    const handleRunDataCode = async () => {
+    // Handle Lit Action execution & Preview Update
+    const handleRunDataCode = async (userParams: any = previewData) => {
         // Build user params from current parameter values
-        const userParams: Record<string, unknown> = {};
-        parameters.forEach(p => {
-            userParams[p.name] = previewData[p.name];
-        });
+        // Note: parameters contains metadata, previewData contains values
+        // We use the passed 'userParams' which should be the *values*
 
-        // 1. Run Client-Side (Log Only)
-        // We run this to show logs to the user, but we DON'T block update on failure.
-        // The Server will re-run this to generate the image.
-        runDataCode(dataCode, userParams).then((result) => {
-            if (!result) {
-                notify("Client execution logs empty (Server will retry for image)", "warning");
-            }
-        });
+        // 1. Run Server-Side Logic (Fetch Logs)
+        // This hits the /execute endpoint on the OG Engine to get logs and results
+        runDataCode(dataCode, userParams).catch(err => console.warn('[PinEditor] Server logic execution failed (non-fatal):', err));
 
         // 2. Trigger Preview Update (Start IPFS Upload & Sign)
         // We pass 'userParams' (INPUTS), not 'result' (OUTPUTS).
@@ -166,16 +232,34 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
         renderPreview({
             dataCode: dataCode,
             uiCode: uiCode,
-            previewData: userParams, // PASS INPUTS!
+            previewData: userParams,
             parameters: parameters,
             userConfig: initialWidget?.userConfig
-        }, pinId);
+        }, pinId, pin?.version).then((res) => {
+            if (res && res.cid) {
+                setLastPreviewedState({
+                    uiCode: uiCode,
+                    dataCode: dataCode,
+                    parameters: parameters,
+                    previewData: userParams,
+                    cid: res.cid,
+                    signature: res.signature || undefined,
+                    timestamp: res.timestamp || undefined
+                });
+            }
+        });
     };
 
     const currentError = generateError || dataCodeError;
 
     useEffect(() => {
         if (currentError) {
+            // Squelch "Failed to fetch" errors from the DataRunner (optional log-only step)
+            // preventing annoyance when local connection to OG engine fails but preview still works.
+            if (currentError === 'TypeError: Failed to fetch' || currentError.includes('Failed to fetch')) {
+                console.warn('[PinEditor] Suppressed optional runner error:', currentError);
+                return;
+            }
             notify(currentError, 'error');
         }
     }, [currentError]);
@@ -230,28 +314,36 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
                     <PinDisplayCard
                         title={title}
                         description={tagline}
-                        imageSrc={previewImageUrl}
+                        imageSrc={previewImageUrl || cachedImageUrl}
                         isLoading={isGenerating || isPreviewLoading || isDataCodeRunning}
                     >
                         <div className="w-full px-0">
                             <div className="grid grid-cols-3 gap-2 md:gap-4 w-full">
                                 <Button
-                                    variant="outline"
+                                    variant="ghost"
                                     onClick={() => router.push(`/p/${pinId}`)}
-                                    className="w-full h-10 font-bold tracking-wider"
+                                    className="text-muted-foreground w-full h-10 px-2 font-bold tracking-wider"
                                     icon={ChevronLeft}
                                 >
                                     BACK
                                 </Button>
                                 <Button
                                     variant="secondary"
-                                    onClick={handleRunDataCode}
-                                    disabled={isDataCodeRunning || isPreviewLoading}
-                                    isLoading={isPreviewLoading}
-                                    className="w-full h-10 font-bold tracking-wider"
-                                    icon={Play}
+                                    onClick={() => handleRunDataCode(previewData)} // Recalculate with current manual inputs
+                                    disabled={isDataCodeRunning || isPreviewLoading || !isDirty}
+                                    className="w-full h-10 px-2 font-bold tracking-wider"
                                 >
-                                    UPDATE
+                                    {isDataCodeRunning || isPreviewLoading ? (
+                                        <span className="flex items-center gap-2">
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                            RUNNING
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center gap-2">
+                                            <Play className="w-3 h-3" />
+                                            UPDATE
+                                        </span>
+                                    )}
                                 </Button>
                                 <SavePinButton
                                     pinId={pinId}
@@ -261,8 +353,11 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
                                     dataCode={dataCode}
                                     parameters={parameters}
                                     previewData={previewData}
-                                    disabled={!hasGenerated || isDataCodeRunning}
-                                    className="w-full h-10 font-bold tracking-wider"
+                                    manifestCid={!isDirty && lastPreviewedState ? lastPreviewedState.cid : null}
+                                    signature={!isDirty && lastPreviewedState ? lastPreviewedState.signature : undefined}
+                                    timestamp={!isDirty && lastPreviewedState ? lastPreviewedState.timestamp : undefined}
+                                    disabled={!hasGenerated || isDataCodeRunning || isPreviewLoading || isDirty || ((!lastPreviewedState || lastPreviewedState.cid === pin?.version) && title === pin?.title && tagline === pin?.tagline)}
+                                    className="w-full h-10 px-2 font-bold tracking-wider"
                                 />
                             </div>
                         </div>

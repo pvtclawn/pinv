@@ -3,6 +3,9 @@ export interface Widget {
   uiCode: string;
   parameters: any[];
   previewData: any;
+  userConfig?: Record<string, string>;
+  signature?: string;
+  timestamp?: number;
 }
 
 export interface Pin {
@@ -10,12 +13,15 @@ export interface Pin {
   title: string;
   tagline: string;
   lastUpdated: string;
+  version?: string; // IPFS CID of the current version
   widget?: {
     dataCode: string;
     uiCode: string;
     parameters: any[];
     previewData: any;
     userConfig?: Record<string, string>;
+    signature?: string;
+    timestamp?: number;
   };
 }
 

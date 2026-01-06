@@ -1,23 +1,22 @@
-import { NextResponse } from "next/server";
-import { PinataSDK } from "pinata";
+"use server";
 
-export const dynamic = "force-dynamic";
+import { PinataSDK } from "pinata";
 
 const pinata = new PinataSDK({
     pinataJwt: process.env.PINATA_JWT!,
     pinataGateway: process.env.NEXT_PUBLIC_IPFS_GATEWAY,
 });
 
-export async function GET() {
+export async function getPinataUploadUrl() {
     try {
         const url = await pinata.upload.public.createSignedURL({
             expires: 120, // 2 minutes
             maxFileSize: 10 * 1024 * 1024, // 10MB
         });
 
-        return NextResponse.json({ url });
-    } catch (error) {
+        return { url };
+    } catch (error: any) {
         console.error("Pinata Token Error:", error);
-        return NextResponse.json({ error: "Failed to generate upload token" }, { status: 500 });
+        throw new Error("Failed to generate upload token: " + error.message);
     }
 }

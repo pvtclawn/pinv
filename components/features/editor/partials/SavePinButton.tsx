@@ -1,9 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Save, Loader2 } from "lucide-react";
+import { useAccount } from "@/components/features/wallet";
+import {
+    useReadPinVPinStores,
+    useSimulatePinVStoreAddVersion,
+    useWritePinVStoreAddVersion,
+    pinVConfig
+} from "@/hooks/contracts";
+import { chain } from "@/components/features/wallet";
+import TxButton from "@/components/shared/TxButton";
 import { notify } from "@/components/shared/Notifications";
 
 interface SavePinButtonProps {
@@ -14,6 +20,9 @@ interface SavePinButtonProps {
     dataCode: string;
     parameters: any[];
     previewData: Record<string, unknown>;
+    manifestCid: string | null;
+    signature?: string;
+    timestamp?: number;
     disabled?: boolean;
     className?: string;
 }
@@ -26,82 +35,39 @@ export function SavePinButton({
     dataCode,
     parameters,
     previewData,
+    manifestCid,
+    signature,
+    timestamp,
     disabled,
     className
 }: SavePinButtonProps) {
     const router = useRouter();
-    const [isSaving, setIsSaving] = useState(false);
+    const { loggedIn } = useAccount();
 
-    const uploadToIpfs = async (content: string | object, isFile = false) => {
-        let body: string | FormData;
-        const headers: Record<string, string> = {};
+    // 1. Get Factory Address
+    // @ts-ignore - address index signature
+    const factoryAddress = pinVConfig.address[chain.id as keyof typeof pinVConfig.address];
 
-        if (isFile) {
-            const formData = new FormData();
-            const blob = new Blob([content as string], { type: 'text/plain' });
-            formData.append('file', blob, 'code.js');
-            body = formData;
-        } else {
-            body = JSON.stringify(content);
-            headers['Content-Type'] = 'application/json';
-        }
+    // 2. Read Store Address for this Pin
+    const { data: storeAddress } = useReadPinVPinStores({
+        args: [BigInt(pinId)],
+        query: { enabled: !!pinId }
+    });
 
-        const res = await fetch('/api/ipfs/upload', {
-            method: 'POST',
-            headers,
-            body
-        });
-
-        if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.error || 'IPFS upload failed');
-        }
-
-        const data = await res.json();
-        return data.ipfsHash as string;
-    };
-
-    const handleSave = async () => {
-        setIsSaving(true);
-
+    // 3. Update Backend Callback
+    const handleBackendUpdate = async () => {
         try {
-            // 1. Upload React Code (UI) as File
-            const uiCodeCid = await uploadToIpfs(uiCode, true);
-            console.log('Uploaded React Code:', uiCodeCid);
-
-            // 2. Upload Handler Action (Data)
-            const dataCodeCid = await uploadToIpfs(dataCode, true);
-            console.log('Uploaded Handler Code:', dataCodeCid);
-
-            // 3. Construct Manifest
-            const manifest = {
-                uiCodeCid: uiCodeCid,
-                handler: {
-                    type: "lit_action",
-                    cid: dataCodeCid
-                },
-                parameters: parameters.map(p => p.name),
-                previewData: previewData,
-                renderHints: {
-                    parameters: parameters
-                }
-            };
-
-            // 4. Upload Manifest (JSON)
-            const manifestCid = await uploadToIpfs(manifest, false);
-            console.log('Uploaded Manifest:', manifestCid);
-
-            // 5. Update Pin on Backend
             const savePayload = {
                 title,
                 tagline,
-                version: manifestCid,
                 widget: {
                     dataCode: dataCode,
                     uiCode: uiCode,
                     parameters,
                     previewData,
                     userConfig: previewData,
+                    signature: signature || undefined,
+                    timestamp: timestamp || undefined
                 }
             };
 
@@ -111,29 +77,30 @@ export function SavePinButton({
                 body: JSON.stringify(savePayload),
             });
 
-            if (!res.ok) throw new Error("Failed to save pin");
+            if (!res.ok) throw new Error("Failed to save pin metadata to backend");
 
-            notify('Pin saved & published to IPFS!', 'success');
-
+            notify('Pin version saved on-chain & metadata updated!', 'success');
             router.push(`/p/${pinId}`);
             router.refresh();
         } catch (e: any) {
-            console.error("Save failed:", e);
-            notify(`Save failed: ${e.message}`, 'error');
-        } finally {
-            setIsSaving(false);
+            console.error("Backend sync failed:", e);
+            notify(`Backend sync failed: ${e.message}`, 'error');
         }
     };
 
     return (
-        <Button
-            onClick={handleSave}
-            disabled={disabled || isSaving}
-            isLoading={isSaving}
-            className={className}
-            icon={isSaving ? Loader2 : Save}
-        >
-            {isSaving ? "PUBLISHING..." : "SAVE"}
-        </Button>
+        <TxButton
+            text="SAVE"
+            variant="default"
+            className={className || "min-w-[120px]"} // Default width if none passed, but Editor passes full width
+            simulateHook={useSimulatePinVStoreAddVersion}
+            writeHook={useWritePinVStoreAddVersion}
+            params={{
+                address: storeAddress,
+                args: [manifestCid || ""],
+                enabled: !!storeAddress && loggedIn && !!manifestCid && !disabled,
+                onConfirmationSuccess: handleBackendUpdate
+            }}
+        />
     );
 }

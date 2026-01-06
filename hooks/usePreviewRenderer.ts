@@ -4,6 +4,8 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useWalletClient, useAccount, useChainId } from "wagmi";
 import { signBundle, encodeBundle, Bundle } from "@/lib/bundle-utils";
 
+import { uploadToIpfs } from "@/lib/ipfs";
+
 interface ManifestData {
     dataCode: string;
     uiCode: string;
@@ -13,7 +15,7 @@ interface ManifestData {
 }
 
 interface UsePreviewRendererReturn {
-    render: (data: ManifestData, pinId: number) => Promise<string | null>;
+    render: (data: ManifestData, pinId: number, version?: string | null) => Promise<{ url: string | null; cid: string | null; signature: string | null; timestamp: number | null }>;
     isLoading: boolean;
     imageUrl: string | null;
     error: string | null;
@@ -33,50 +35,28 @@ export function usePreviewRenderer(): UsePreviewRendererReturn {
 
     const render = useCallback(async (
         data: ManifestData,
-        pinId: number
-    ): Promise<string | null> => {
+        pinId: number,
+        version?: string | null
+    ): Promise<{ url: string | null; cid: string | null; signature: string | null; timestamp: number | null }> => {
         if (!data.uiCode.trim()) {
             setError("No code provided for preview");
-            return null;
+            return { url: null, cid: null, signature: null, timestamp: null };
         }
 
         if (!walletClient || !address) {
             setError("Wallet not connected. Please connect to sign the preview bundle.");
-            return null;
+            return { url: null, cid: null, signature: null, timestamp: null };
         }
 
         setIsLoading(true);
         setError(null);
 
         try {
-            // 1. Get Signed Upload URL
-            const tokenRes = await fetch('/api/pinata-token');
-            if (!tokenRes.ok) throw new Error("Failed to get upload token");
-            const { url: uploadUrl } = await tokenRes.json();
-
-            // 2. Upload to Pinata via Signed URL
-            // Ensure we upload as a File or Blob with correct type
-            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-            const file = new File([blob], "preview.json", { type: "application/json" });
-
-            const formData = new FormData();
-            formData.append("file", file);
-
-            const uploadRes = await fetch(uploadUrl, {
-                method: 'POST',
-                body: formData,
-                // Do not set Content-Type header manually; fetch will set multipart/form-data with boundary
-            });
-
-            if (!uploadRes.ok) {
-                throw new Error(`Upload failed: ${uploadRes.statusText}`);
-            }
-
-            // Note: The direct upload response depends on Pinata's API.
-            // For signed URLs (v3), it returns { data: { cid: ... } }
-            // For older APIs, it might returns { IpfsHash: ... }
-            const uploadData = await uploadRes.json();
-            const cid = uploadData?.data?.cid || uploadData?.IpfsHash;
+            // 2. Upload to Pinata via Shared Utility
+            // We pass the data object directly; uploadToIpfs handles stringification and Blob creation.
+            // Using specific filename for better organization/debugging
+            const filename = `pin-${pinId}-${version ? `v${version}-` : ''}preview-${Date.now()}.json`;
+            const cid = await uploadToIpfs(data, filename);
 
             if (!cid) throw new Error("No CID returned from signed upload");
 
@@ -87,22 +67,31 @@ export function usePreviewRenderer(): UsePreviewRendererReturn {
                 ts: Math.floor(Date.now() / 1000)
             };
 
-            // 4. Sign Bundle
-            const signature = await signBundle(walletClient, address, pinId, bundle, chainId);
+            // 4. Sign Bundle - REMOVED per user request for smooth UX
+            // const signature = await signBundle(walletClient, address, pinId, bundle, chainId);
+            const signature = null;
 
             // 5. Construct OG URL
             const encodedBundle = encodeBundle(bundle);
-            const baseUrl = process.env.NEXT_PUBLIC_OG_ENGINE_URL || 'http://localhost:8080';
-            const url = `${baseUrl}/og/${pinId}?b=${encodedBundle}&sig=${signature}`;
+            // Use Application Proxy instead of Direct OG Engine URL to avoid AD-BLOCK/Brave Blocking (ERR_BLOCKED_BY_CLIENT)
+            // The Next.js API route will forward valid params to the internal OG Engine.
+            const baseUrl = `/api/og/p/${pinId}`;
+
+            // Allow unsigned bundle via new server logic
+            // Add timestamp to force fresh render (cache busting)
+            let url = `${baseUrl}?b=${encodedBundle}&t=${Date.now()}`;
+            if (signature) {
+                url += `&sig=${signature}`;
+            }
 
             setImageUrl(url);
-            return url;
+            return { url, cid, signature, timestamp: bundle.ts || null };
 
         } catch (err) {
             const message = err instanceof Error ? err.message : "Preview render failed";
             setError(message);
             console.error("Preview rendering failed:", err);
-            return null;
+            return { url: null, cid: null, signature: null, timestamp: null };
         } finally {
             setIsLoading(false);
         }

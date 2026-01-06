@@ -1,24 +1,43 @@
+import { getPinataUploadUrl } from "@/app/actions/pinata";
 
-const PINATA_PROXY_URL = '/api/ipfs/upload';
-
-// Helper for IPFS
-export async function uploadToIpfs(data: any): Promise<string> {
+/**
+ * Uploads data to IPFS via a Signed URL (Client-Side).
+ * This replaces the server-side proxy to avoid Vercel timeouts on large files.
+ */
+export async function uploadToIpfs(data: any, filename = 'file.json'): Promise<string> {
     try {
-        const res = await fetch(PINATA_PROXY_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
-        });
+        // 1. Get Signed Upload URL
+        const { url: uploadUrl } = await getPinataUploadUrl();
 
-        if (!res.ok) {
-            const error = await res.json();
-            throw new Error(error.error || 'Failed to upload to IPFS');
+        // 2. Prepare content
+        let blob: Blob;
+        if (typeof data === 'string') {
+            blob = new Blob([data], { type: 'text/plain' });
+        } else {
+            blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
         }
 
-        const json = await res.json();
-        return json.ipfsHash;
+        const file = new File([blob], filename, { type: blob.type });
+        const formData = new FormData();
+        formData.append("file", file);
+
+        // 3. Upload directly to Pinata
+        const uploadRes = await fetch(uploadUrl, {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!uploadRes.ok) {
+            throw new Error(`Upload failed: ${uploadRes.statusText}`);
+        }
+
+        const uploadData = await uploadRes.json();
+        const cid = uploadData?.data?.cid || uploadData?.IpfsHash;
+
+        if (!cid) throw new Error("No CID returned from upload");
+
+        return cid;
+
     } catch (error) {
         console.error('Error uploading to IPFS:', error);
         throw error;

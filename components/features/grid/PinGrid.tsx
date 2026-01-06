@@ -10,6 +10,7 @@ import { ArrowRight, Zap, Loader2 } from "lucide-react";
 import { Pin } from "@/types";
 import { Card } from "@/components/ui/card";
 import { DataEnclave } from "@/components/shared/DataEnclave";
+import { buildOgUrl } from "@/lib/services/preview";
 
 import PinThumbnail from "./PinThumbnail";
 
@@ -23,12 +24,12 @@ export default function PinGrid({ initialPins }: PinGridProps) {
     const { pins, hasMore, loadMore, isLoading } = usePins();
 
     // Trigger initial load if no pins (or if we want to fetch updates)
-    // Trigger initial load if no pins (or if we want to fetch updates)
-    // NOTE: IntersectionObserver (sentinel) below also triggers loadMore if pins are empty and hasMore is true.
-    // We keep this specific check simple: Only if we haven't loaded anything and not loading.
-    // Actually, strict mode double-invokes this + sentinel.
-    // The safest way is to trust the sentinel for the "bottom" or "empty" state trigger.
-    // Removing this explicit effect to rely on Sentinel + IO.
+    // Trigger initial load if no pins
+    useEffect(() => {
+        if (pins.length === 0 && !isLoading && hasMore) {
+            loadMore();
+        }
+    }, [pins.length, isLoading, hasMore, loadMore]);
 
     const observerRef = useRef<IntersectionObserver | null>(null);
     const sentinelRef = useRef<HTMLDivElement>(null);
@@ -75,7 +76,7 @@ export default function PinGrid({ initialPins }: PinGridProps) {
                             <DataEnclave className="w-full aspect-3/2 p-0 overflow-hidden md:group-hover:border-primary/30 transition-colors border-y border-transparent relative">
                                 {/* Background Image */}
                                 <PinThumbnail
-                                    src={`/api/og/p/${pin.id}`}
+                                    src={buildOgUrl(pin.id, {}, true, pin)}
                                     alt={pin.title}
                                     className="md:group-hover:scale-105"
                                 />
@@ -106,7 +107,7 @@ export default function PinGrid({ initialPins }: PinGridProps) {
                 <div ref={sentinelRef} className="flex justify-center py-8">
                     <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
                         <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                        <span className="text-sm font-mono tracking-widest uppercase">Fetching more...</span>
+                        <span className="text-sm font-mono tracking-widest uppercase">Loading...</span>
                     </div>
                 </div>
             )}
