@@ -193,25 +193,20 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
             // Auto open config after generation to show progress/change
             setAccordionValue("config");
 
-            // Auto-trigger preview render
-            renderPreview({
-                dataCode: result.dataCode,
+            // 1. Run Unified Preview (Logs + Image) via /og/preview
+            // This returns the image Base64 immediately alongside logs
+            await runDataCode(result.dataCode, result.previewData, result.uiCode)
+                .catch(err => console.warn('[PinEditor] Preview execution failed (non-fatal):', err));
+
+            // 2. Mark as Previewed (Draft)
+            setLastPreviewedState({
                 uiCode: result.uiCode,
-                previewData: result.previewData,
-                parameters: result.parameters,
-                userConfig: initialWidget?.userConfig // Preserve existing config or empty
-            }, pinId, pin?.version).then((res) => {
-                if (res && res.cid) {
-                    setLastPreviewedState({
-                        uiCode: result.uiCode,
-                        dataCode: result.dataCode || '',
-                        parameters: result.parameters || [],
-                        previewData: result.previewData || {},
-                        cid: res.cid,
-                        signature: res.signature || undefined,
-                        timestamp: res.timestamp || undefined
-                    });
-                }
+                dataCode: result.dataCode || '',
+                parameters: result.parameters || [],
+                previewData: result.previewData || {},
+                cid: '',
+                signature: undefined,
+                timestamp: undefined
             });
         }
     };
