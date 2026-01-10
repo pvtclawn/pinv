@@ -87,16 +87,21 @@ export default function PinViewer({ pin, pinId, initialParams }: PinViewerProps)
             if (JSON.stringify(values) !== JSON.stringify(debouncedValues)) {
                 setDebouncedValues(values);
             }
-        }, 1200);
+        }, 1000);
         return () => clearTimeout(timer);
     }, [values, debouncedValues]);
 
     // Update URLs (Basic)
+    // Update Preview URL (Debounced)
+    // Fix: Depend on primitives (pin.version) not the full 'pin' object to prevent re-renders from parent
     useEffect(() => {
         setPreviewUrl(buildOgUrl(pinId, debouncedValues, true, pin));
-        // Note: Default Share URL is simple. Signed Bundle is generated on Demand.
+    }, [debouncedValues, pinId, pin.version]);
+
+    // Update Share URL (Instant)
+    useEffect(() => {
         setShareUrl(buildShareUrl(pinId, values));
-    }, [debouncedValues, values, pinId, pin]);
+    }, [values, pinId]);
 
     // --- Handlers ---
 
@@ -142,23 +147,47 @@ export default function PinViewer({ pin, pinId, initialParams }: PinViewerProps)
             setIsCopying(true);
             const url = await getSignedShareUrl();
 
-            // Attempt to restore focus (common fix for wallet popup race conditions)
-            if (typeof window !== 'undefined') window.focus();
+            // Robust Copy Logic (Async + Fallback)
+            const copyToClipboard = async (text: string) => {
+                // 1. Try Async API
+                if (navigator.clipboard?.writeText) {
+                    try {
+                        await navigator.clipboard.writeText(text);
+                        return true;
+                    } catch (e) { console.warn("Async copy failed, trying fallback", e); }
+                }
+                // 2. Fallback: execCommand (Works better in detached focus states)
+                try {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    textArea.style.position = "fixed";
+                    textArea.style.left = "-9999px";
+                    textArea.style.top = "0";
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    return successful;
+                } catch (e) {
+                    console.error("Fallback copy failed", e);
+                    return false;
+                }
+            };
 
-            if (navigator.clipboard?.writeText) {
-                await navigator.clipboard.writeText(url);
+            const success = await copyToClipboard(url);
+
+            if (success) {
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
                 notify("Copied to clipboard!", "success");
+            } else {
+                // Determine if it was a permission/focus issue
+                notify("Link Signed! Click Copy again manually.", "warning");
             }
         } catch (e: any) {
             console.error("Copy failed", e);
-            // If signature succeeded but copy failed due to focus/permissions:
-            if (e.name === 'NotAllowedError' || e.message?.includes('focus')) {
-                notify("Link Signed! Click Copy again to save.", "success");
-            } else {
-                notify("Failed to generate signed link", "error");
-            }
+            notify("Failed to generate signed link", "error");
         } finally {
             setIsCopying(false);
         }

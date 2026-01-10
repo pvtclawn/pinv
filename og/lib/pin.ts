@@ -20,6 +20,8 @@ const CACHE_TTL = 5 * 1000; // 5 seconds (Reduced from 60s to fix "Previous One"
 // CIDs are immutable, so we can cache them for a very long time (e.g., 24h or indefinite)
 const ipfsCache = new Map<string, { data: any, expires: number }>();
 const IPFS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+// Re-use in-flight requests to prevent Thundering Herd
+const pendingFetches = new Map<string, Promise<any>>();
 
 export async function getPin(id: number, version?: bigint): Promise<Pin | null> {
     // Check Cache (Only if looking for latest or if we want to cache specific versions later)
@@ -84,11 +86,34 @@ export async function getPin(id: number, version?: bigint): Promise<Pin | null> 
                     console.log(`[Perf] IPFS Cache Hit: ${cid}`);
                     widgetData = cachedIpfs.data;
                 } else {
-                    console.log(`[Perf] IPFS Cache Miss: ${cid}`);
-                    // @ts-ignore
-                    widgetData = await fetchFromIpfs(cid);
-                    // Cache It (Long Live)
-                    ipfsCache.set(cid, { data: widgetData, expires: Date.now() + IPFS_CACHE_TTL });
+                    // COALESCING: Check pending fetches
+                    if (pendingFetches.has(cid)) {
+                        console.log(`[Perf] IPFS Coalesced: ${cid}`);
+                        widgetData = await pendingFetches.get(cid);
+                    } else {
+                        console.log(`[Perf] IPFS Cache Miss: ${cid}`);
+
+                        // Create Promise and store it
+                        const fetchPromise = fetchFromIpfs(cid).then(data => {
+                            // Cache It (Long Live) - ONLY on success
+
+                            // MEMORY SAFETY: Prevent unbounded growth
+                            if (ipfsCache.size >= 1000) {
+                                // Delete oldest (FIFO)
+                                const oldestKey = ipfsCache.keys().next().value;
+                                if (oldestKey) ipfsCache.delete(oldestKey);
+                            }
+
+                            ipfsCache.set(cid, { data, expires: Date.now() + IPFS_CACHE_TTL });
+                            return data;
+                        }).finally(() => {
+                            // Cleanup pending
+                            pendingFetches.delete(cid);
+                        });
+
+                        pendingFetches.set(cid, fetchPromise);
+                        widgetData = await fetchPromise;
+                    }
                 }
             }
         }

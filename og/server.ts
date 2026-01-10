@@ -7,8 +7,6 @@ import * as dotenv from 'dotenv';
 import { getPin } from './lib/pin';
 import { parseBundle } from './lib/bundle';
 import { verifySignature } from './lib/sig';
-import { checkOwnership } from './lib/chain';
-import { getManifest } from './lib/manifest';
 import { computeParamsHash } from '../lib/og-common';
 import { executeLitAction } from './lib/executor';
 import cors from '@fastify/cors';
@@ -21,7 +19,7 @@ dotenv.config({ path: path.join(__dirname, '../.env.local'), override: true });
 // Environment & Config
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 const CACHE_TTL = 604800; // 7 days (Long-term storage)
-const REVALIDATE_TTL = 86400; // 24 hours (Freshness check - unlikely to fire if Version keying works)
+const REVALIDATE_TTL = 60; // 1 minute (Freshness check for dynamic content)
 const LOCK_TTL = 30; // 30s lock for generation
 const PORT = parseInt(process.env.PORT || '8080');
 const TIMESTAMP_BUCKET_MS = parseInt(process.env.TIMESTAMP_BUCKET_MS || '60000'); // 1 minute bucketing to match TTL
@@ -164,7 +162,9 @@ async function generateOgImage(pinId: number, queryParams: Record<string, string
                 widget: { uiCode: "", previewData: {}, userConfig: {} }
             };
         } else {
-            pin = await getPin(pinId);
+            // FIX: If bundle specifies a version, fetch THAT version, not latest.
+            const targetVer = authorizedBundle?.ver ? BigInt(authorizedBundle.ver) : undefined;
+            pin = await getPin(pinId, targetVer);
         }
     }
     const tPinFetch = performance.now();
@@ -192,15 +192,11 @@ async function generateOgImage(pinId: number, queryParams: Record<string, string
     });
 
     if (authorizedBundle) {
-        if (authorizedBundle.ver) {
-            const manifest = await getManifest(authorizedBundle.ver);
-            if (manifest && manifest.uiCode) {
-                uiCode = manifest.uiCode;
-                baseProps = { ...(manifest.previewData || {}), ...(manifest.userConfig || {}) };
-            }
-        }
+        // NOTE: We already fetched the correct version above, so `pin.widget` contains the correct code/props.
+        // No need to call getManifest(ver) which was creating "CID=4" errors.
+
         if (authorizedBundle && authorizedBundle.params) {
-            const dataCode = authorizedBundle.ver ? (await getManifest(authorizedBundle.ver))?.dataCode : pin.widget?.dataCode;
+            const dataCode = pin.widget?.dataCode;
 
             // CRITICAL FIX: Merge Defaults + Bundle parameters
             // This ensures hidden secrets (like API keys) defined in 'previewData' but not sent by the client are preserved.
@@ -249,7 +245,11 @@ async function generateOgImage(pinId: number, queryParams: Record<string, string
 }
 
 // Route
-server.get<{ Params: { pinId: string }, Querystring: { b?: string, sig?: string, params?: string, ver?: string, ts?: string, tokenId?: string } }>('/og/:pinId', async (request, reply) => {
+server.get<{
+    Params: { pinId: string }, Querystring: {
+        t: any; b?: string, sig?: string, params?: string, ver?: string, ts?: string, tokenId?: string
+    }
+}>('/og/:pinId', async (request, reply) => {
     const pinId = parseInt(request.params.pinId);
     if (isNaN(pinId)) return reply.code(400).send('Invalid Pin ID');
 
@@ -344,45 +344,51 @@ server.get<{ Params: { pinId: string }, Querystring: { b?: string, sig?: string,
     }
 
     // Hit?
+    // Hit?
     if (cachedBuffer) {
-        // Serve Stale Immediately
-        const dynamicTTL = b ? 60 : REVALIDATE_TTL;
-        reply.header('Content-Type', 'image/png');
-        reply.header('Cache-Control', `public, max-age=${dynamicTTL}, stale-while-revalidate=${dynamicTTL}`);
-        reply.header('X-Cache', 'HIT-SWR');
-        reply.send(cachedBuffer);
+        // Check freshness early
+        const freshKey = `fresh:${cacheKey}`;
+        const isFresh = await redis.exists(freshKey);
 
-        // Background Update (if not locked)
-        const isLocked = await redis.exists(lockKey);
-        if (!isLocked) {
-            // Set Lock to prevent thundering herd on background update
-            await redis.set(lockKey, '1', 'EX', LOCK_TTL, 'NX');
-            // Fire & Forget
-            // Fire & Forget - Use setTimeout to ensure response is efficiently flushed on the network layer
-            // This 500ms delay helps prevents CPU starvation from the background process affecting the current response closure
-            const freshKey = `fresh:${cacheKey}`;
-            const isFresh = await redis.exists(freshKey);
+        // DECISION: Should we serve stale?
+        // 1. If it's FRESH, always yes.
+        // 2. If it's STALE, only yes if user didn't ask for explicit refresh (via 't' param).
+        // If 't' is present and data is stale, we fall through to synchronous generation to give the user the NEW data they noticed.
+        if (isFresh || !request.query.t) {
+            const dynamicTTL = b ? 60 : REVALIDATE_TTL;
+            reply.header('Content-Type', 'image/png');
+            reply.header('Cache-Control', `public, max-age=${dynamicTTL}, stale-while-revalidate=${dynamicTTL}`);
 
-            if (isFresh) {
-                console.log(`[OG] SWR Cache HIT-FRESH (Window: 24h). Skipping background update.`);
-            } else {
-                console.log(`[OG] SWR Cache HIT-STALE. Response Sent. Scheduling background update...`);
-                setTimeout(() => {
-                    console.log(`[OG] SWR: Starting background update for ${pinId}`);
-                    // Set fresh key immediately to prevent overlapped triggers in the same window
-                    redis.set(freshKey, '1', 'EX', REVALIDATE_TTL);
+            const hitType = isFresh ? 'HIT-FRESH' : 'HIT-SWR';
+            reply.header('X-Cache', hitType);
+            reply.send(cachedBuffer);
 
-                    generateOgImage(pinId, queryParams, authorizedBundle, cacheKey, preFetchedPin)
-                        .then(() => redis.del(lockKey))
-                        .catch(e => {
-                            console.error("[OG] Background SWR Failed:", e);
-                            redis.del(lockKey);
-                            redis.del(freshKey); // Retry next time
-                        });
-                }, 500);
+            // Background Update (only if stale)
+            if (!isFresh) {
+                const isLocked = await redis.exists(lockKey);
+                if (!isLocked) {
+                    // Set Lock to prevent thundering herd on background update
+                    await redis.set(lockKey, '1', 'EX', LOCK_TTL, 'NX');
+
+                    console.log(`[OG] SWR Cache HIT-STALE. Response Sent. Scheduling background update...`);
+                    setTimeout(() => {
+                        console.log(`[OG] SWR: Starting background update for ${pinId}`);
+                        // Set fresh key immediately to prevent overlapped triggers
+                        redis.set(freshKey, '1', 'EX', REVALIDATE_TTL);
+
+                        generateOgImage(pinId, queryParams, authorizedBundle, cacheKey, preFetchedPin)
+                            .then(() => redis.del(lockKey))
+                            .catch(e => {
+                                console.error("[OG] Background SWR Failed:", e);
+                                redis.del(lockKey);
+                                redis.del(freshKey);
+                            });
+                    }, 500);
+                }
             }
+            return;
         }
-        return;
+        console.log(`[OG] Cache STALE + Forced Refresh ('t'). Skipping SWR to generate fresh content.`);
     }
 
     // Miss? - Synchronous Generation

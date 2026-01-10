@@ -157,6 +157,9 @@ async function run() {
         console.error(`[Worker Perf] Satori Render: ${(tSatori - tSetup).toFixed(2)}ms`);
 
         // 7. Resvg Render (SVG -> PNG)
+        // Debug: Dump SVG to investigate panics
+        fs.writeFileSync(path.join(__dirname, 'debug_last_svg.svg'), svg);
+
         const resvg = new Resvg(svg, {
             fitTo: { mode: 'width', value: width }
         });
