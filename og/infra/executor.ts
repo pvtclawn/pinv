@@ -51,6 +51,59 @@ async function getLitClient() {
     return initPromise;
 }
 
+// Session Caching (Module Scope)
+let cachedSessionSigs: any = null;
+let sessionExpirationTime = 0;
+
+async function getGlobalSession(client: LitNodeClient) {
+    // Return cached if valid (buffer 5 mins)
+    if (cachedSessionSigs && Date.now() < sessionExpirationTime - 1000 * 60 * 5) {
+        return cachedSessionSigs;
+    }
+
+    console.log(`[OG] Refreshing Lit Session (New Handshake)...`);
+
+    // 24 hours expiration
+    const expiration = new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString();
+
+    cachedSessionSigs = await client.getSessionSigs({
+        chain: 'ethereum',
+        expiration,
+        resourceAbilityRequests: [
+            {
+                resource: new LitActionResource('*') as any,
+                ability: 'lit-action-execution' as any,
+            },
+        ],
+        authNeededCallback: async ({
+            uri,
+            expiration,
+            resourceAbilityRequests,
+        }) => {
+            const toSign = await createSiweMessage({
+                uri,
+                expiration,
+                resources: resourceAbilityRequests as any,
+                walletAddress: litWallet!.address,
+                nonce: await client.getLatestBlockhash(),
+                litNodeClient: client,
+            });
+
+            const signature = await litWallet!.signMessage(toSign);
+
+            return {
+                sig: signature,
+                derivedVia: 'web3.eth.personal.sign',
+                signedMessage: toSign,
+                address: litWallet!.address,
+            };
+        },
+    });
+
+    sessionExpirationTime = Date.now() + 1000 * 60 * 60 * 24;
+    return cachedSessionSigs;
+}
+
 export async function executeLitAction(
     code: string,
     params: NormalizedParams
@@ -79,41 +132,8 @@ export async function executeLitAction(
 
         console.log(`[OG] Executing Lit Action on ${NETWORK}...`);
 
-        // Generate Session Sigs (required for most actions in v6+)
-        // For simple "executeJs" without signing, we still need auth context
-        const sessionSigs = await client.getSessionSigs({
-            chain: 'ethereum',
-            expiration: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(), // 24 hours
-            resourceAbilityRequests: [
-                {
-                    resource: new LitActionResource('*') as any,
-                    ability: 'lit-action-execution' as any,
-                },
-            ],
-            authNeededCallback: async ({
-                uri,
-                expiration,
-                resourceAbilityRequests,
-            }) => {
-                const toSign = await createSiweMessage({
-                    uri,
-                    expiration,
-                    resources: resourceAbilityRequests as any,
-                    walletAddress: litWallet!.address,
-                    nonce: await client.getLatestBlockhash(),
-                    litNodeClient: client,
-                });
-
-                const signature = await litWallet!.signMessage(toSign);
-
-                return {
-                    sig: signature,
-                    derivedVia: 'web3.eth.personal.sign',
-                    signedMessage: toSign,
-                    address: litWallet!.address,
-                };
-            },
-        });
+        // Get Session (Cached or New)
+        const sessionSigs = await getGlobalSession(client);
 
         // Execute on Lit Network
         // Nest params under 'jsParams' so it appears as a global variable in Lit Action
