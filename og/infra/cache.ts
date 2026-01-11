@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import { LRUCache } from 'lru-cache';
 import {
     REDIS_URL,
     REDIS_CONNECT_TIMEOUT,
@@ -25,34 +26,13 @@ redis.on('error', (err) => {
     console.warn('[Redis] Connection failed, falling back to memory cache:', err.message);
 });
 
+// Safe LRU Cache (lru-cache library)
+// 500 items ~ 50MB (assuming 100KB per image)
+// TTL: 5 minutes (Fallback if Redis fails)
+export const memoryCache = new LRUCache<string, { data: Buffer, expires: number }>({
+    max: 500,
+    ttl: 1000 * 60 * 5,
+    allowStale: false,
+});
 
-// Safe LRU Cache (Bounded)
-class SafeLRUCache<K, V> {
-    private map: Map<K, V>;
-    private readonly MAX_SIZE = 500; // ~50MB limit
-
-    constructor() {
-        this.map = new Map<K, V>();
-    }
-
-    get(key: K): V | undefined {
-        return this.map.get(key);
-        // Note: For strict LRU, we would re-insert here, but for simple bounding, 
-        // FIFO/Insertion order is sufficient and faster.
-    }
-
-    set(key: K, value: V): void {
-        // Eviction Policy
-        if (this.map.size >= this.MAX_SIZE) {
-            const oldestKey = this.map.keys().next().value;
-            if (oldestKey !== undefined) {
-                this.map.delete(oldestKey);
-            }
-        }
-        this.map.set(key, value);
-    }
-}
-
-// Export Singleton
-export const memoryCache = new SafeLRUCache<string, { data: Buffer, expires: number }>();
 
