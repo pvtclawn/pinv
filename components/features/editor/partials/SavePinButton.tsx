@@ -31,8 +31,8 @@ interface SavePinButtonProps {
     timestamp?: number;
     disabled?: boolean;
     className?: string;
-    onPrepareSave?: () => Promise<{ cid?: string | null; signature?: string | null } | null | undefined>;
     currentVersion?: string;
+    onPrepareSave?: () => Promise<{ cid?: string | null; signature?: string | null } | null | undefined>;
 }
 
 export function SavePinButton({

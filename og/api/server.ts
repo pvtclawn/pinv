@@ -12,6 +12,24 @@ const server = fastify({
 
 // ... (middleware)
 
+// PREVENTION: Concurrency Limiter
+// 1GB RAM / ~100MB per heavy render = ~10 concurrent requests safe limit.
+const MAX_CONCURRENT = 10;
+let activeRequests = 0;
+
+server.addHook('onRequest', async (req, reply) => {
+    if (activeRequests >= MAX_CONCURRENT) {
+        // Fast fail to protect memory
+        logToFile(`[Load Shedding] Rejecting request. Active: ${activeRequests}`);
+        return reply.status(503).header('Retry-After', '5').send('Server Busy - Too High Load');
+    }
+    activeRequests++;
+});
+
+server.addHook('onResponse', async (req, reply) => {
+    activeRequests--;
+});
+
 // Global Handlers
 process.on('unhandledRejection', (reason, promise) => {
     const msg = `[OG Engine] Unhandled Rejection: ${reason}`;
