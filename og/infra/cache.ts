@@ -6,7 +6,9 @@ import {
     REDIS_MAX_RETRIES,
     REDIS_RETRY_LIMIT,
     REDIS_RETRY_DELAY_BASE,
-    REDIS_RETRY_DELAY_MAX
+    REDIS_RETRY_DELAY_MAX,
+    MEMORY_CACHE_MAX_ITEMS,
+    MEMORY_CACHE_TTL
 } from '../utils/constants';
 
 // Initialize Redis
@@ -30,8 +32,8 @@ redis.on('error', (err) => {
 // 500 items ~ 50MB (assuming 100KB per image)
 // TTL: 5 minutes (Fallback if Redis fails)
 export const memoryCache = new LRUCache<string, { data: Buffer, expires: number }>({
-    max: 500,
-    ttl: 1000 * 60 * 5,
+    max: MEMORY_CACHE_MAX_ITEMS,
+    ttl: MEMORY_CACHE_TTL,
     allowStale: false,
 });
 

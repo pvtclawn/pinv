@@ -35,5 +35,6 @@ export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000
 export const OG_WIDTH = 1200;
 export const OG_HEIGHT = 800;
 export const WORKER_TIMEOUT_MS = 10000;
-export const MEMORY_CACHE_TTL = 60000;
+export const MEMORY_CACHE_TTL = 300000; // 5 minutes (Fallback)
+export const MEMORY_CACHE_MAX_ITEMS = 500; // ~50MB limit
 
