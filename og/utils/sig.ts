@@ -18,13 +18,11 @@ const domain = {
 } as const;
 
 const types = {
-    CustomizeOG: [
-        { name: 'pinId', type: 'uint256' }, // tokenId
-        { name: 'ver', type: 'string' },
-        { name: 'paramsHash', type: 'bytes32' }, // We used string originally, user prompt says "Hash using keccak256 over bytes...". 
-        // Let's stick to what we implemented in security.ts or upgrade? 
-        // User prompt: "Hash using keccak256 over bytes of canonical JSON string." -> so type IS bytes32.
-        { name: 'ts', type: 'uint256' }
+    PinConfiguration: [
+        { name: 'Pin_ID', type: 'uint256' },
+        { name: 'Content_CID', type: 'string' },
+        { name: 'Configuration_Hash', type: 'bytes32' },
+        { name: 'Timestamp', type: 'uint256' }
     ]
 } as const;
 
@@ -57,10 +55,10 @@ export async function verifySignature(
     const paramsHash = keccak256(toBytes(paramsStr));
 
     const message = {
-        pinId: BigInt(pinId),
-        ver: bundle.ver || '',
-        paramsHash: paramsHash,
-        ts: BigInt(bundle.ts)
+        Pin_ID: BigInt(pinId),
+        Content_CID: bundle.ver || '',
+        Configuration_Hash: paramsHash,
+        Timestamp: BigInt(bundle.ts)
     };
 
     try {
@@ -71,7 +69,7 @@ export async function verifySignature(
         const recovered = await recoverTypedDataAddress({
             domain,
             types,
-            primaryType: 'CustomizeOG',
+            primaryType: 'PinConfiguration',
             message,
             signature: signature as Hex
         });

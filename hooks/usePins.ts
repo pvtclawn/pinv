@@ -49,7 +49,11 @@ export function usePins() {
                 return;
             }
 
+
+
             const endId = Math.max(1, startId - limit + 1);
+            console.log(`[usePins] Fetching range: ${startId} -> ${endId} (Limit: ${limit})`);
+
             const ids: number[] = [];
             for (let i = startId; i >= endId; i--) ids.push(i);
 
@@ -65,6 +69,17 @@ export function usePins() {
             const validStores = storeResults
                 .map((res, i) => ({ id: ids[i], address: res.result as `0x${string}` }))
                 .filter(s => s.address && s.address !== zeroAddress);
+
+            console.log(`[usePins] Found ${validStores.length} valid stores out of ${ids.length} IDs checked.`);
+
+            if (validStores.length === 0) {
+                // Optimization: If empty batch, we update cursor but don't error.
+                // The effect will trigger next batch automatically.
+                console.log('[usePins] Batch empty, skipping metadata fetch.');
+                setLastId(endId);
+                if (endId <= 1) setHasMore(false);
+                return;
+            }
 
             // 2. Batch Fetch Metadata (Parallel)
             // Flatten calls: [Title1, Tag1, Ver1, Creator1, Title2, Tag2, Ver2, Creator2, ...]
@@ -84,6 +99,8 @@ export function usePins() {
                 const tagline = metaResults[baseIdx + 1].result as string;
                 const latestVer = metaResults[baseIdx + 2].result as bigint;
                 const creator = metaResults[baseIdx + 3].result as string;
+
+                // console.log(`[usePins] Pin ${store.id}: ${title} (v${latestVer})`);
 
                 let widgetData = {};
                 if (latestVer > BigInt(0)) {
@@ -110,9 +127,12 @@ export function usePins() {
                     tagline,
                     creator,
                     lastUpdated: new Date().toISOString(),
+                    version: latestVer.toString(),
                     widget: widgetData as any
                 };
             }))).filter(Boolean) as Pin[];
+
+            console.log(`[usePins] Hydrated ${newPins.length} pins.`);
 
             setPins(prev => {
                 // Deduplicate pins just in case

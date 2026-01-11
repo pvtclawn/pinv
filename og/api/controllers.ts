@@ -5,6 +5,7 @@ import { generateOgImage } from '../services/generator';
 import { resolveContext } from '../services/auth';
 import { generateCacheKey } from '../utils/keygen';
 import { serveWithSWR } from '../services/swr';
+import { logToFile } from '../utils/logger';
 import { OG_WIDTH, OG_HEIGHT } from '../utils/constants';
 
 export async function previewHandler(req: FastifyRequest, reply: FastifyReply) {
@@ -36,7 +37,8 @@ export async function previewHandler(req: FastifyRequest, reply: FastifyReply) {
         return reply.send({ result, logs, image: imageBase64 });
     } catch (e: any) {
         req.log.error(e);
-        return reply.status(500).send({ error: "Preview failed", logs: [e.message] });
+        logToFile(`[Preview] Error: ${e.message}`);
+        return reply.status(500).send({ error: e.message || "Unknown Error", logs: [e.message] });
     }
 }
 
@@ -61,13 +63,21 @@ export async function getPinHandler(request: FastifyRequest<{
     };
 
     // 4. Serve
-    return serveWithSWR({
-        pinId,
-        cacheKey,
-        lockKey,
-        generatorFn,
-        reply,
-        forceRefresh: !!request.query.t,
-        isBundle: !!ctx.authorizedBundle
-    });
+    // 4. Serve
+    try {
+        return await serveWithSWR({
+            pinId,
+            cacheKey,
+            lockKey,
+            generatorFn,
+            reply,
+            forceRefresh: !!request.query.t,
+            isBundle: !!ctx.authorizedBundle
+        });
+    } catch (e: any) {
+        if (e.message === 'NO_UI_CODE') {
+            return reply.code(404).send('Pin content not found (IPFS missing).');
+        }
+        throw e;
+    }
 }

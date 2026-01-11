@@ -14,38 +14,48 @@ export async function fetchFromIpfs(cid: string): Promise<any> {
     // Deduplicate
     const uniqueGateways = Array.from(new Set(GATEWAYS));
 
-    let lastError;
-
-    for (const gateway of uniqueGateways) {
-        try {
-            // Short timeout for public gateways to fail fast
+    // Race all gateways in parallel to find the content fastest
+    // This avoids accumulating timeouts (e.g. 10s * 4 gateways = 40s latency)
+    try {
+        const fetchWithTimeout = async (url: string) => {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 4000);
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout per request
 
-            const res = await fetch(`${gateway}${cid}`, {
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
+            // Hard timeout race to handle hanging fetches (e.g. CSP blocking in some envs)
+            const hardTimeout = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('Request timed out')), 11000)
+            );
 
-            if (res.ok) {
+            try {
+                const res = await Promise.race([
+                    fetch(url, { signal: controller.signal }),
+                    hardTimeout
+                ]) as Response;
+
+                clearTimeout(timeoutId);
+                if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
                 return await res.json();
+            } catch (e) {
+                clearTimeout(timeoutId);
+                // console.warn(`[IPFS] Fetch failed for ${url}:`, e);
+                throw e;
             }
+        };
 
-            // If 429, warned and continue to next gateway immediately
-            if (res.status === 429) {
-                console.warn(`[IPFS] 429 on ${gateway}. Failover...`);
-                continue;
-            }
+        const promises = uniqueGateways.map(gateway =>
+            fetchWithTimeout(`${gateway}${cid}`)
+        );
 
-            throw new Error(`${res.status} ${res.statusText}`);
-        } catch (e: any) {
-            console.warn(`[IPFS] Failed ${gateway}: ${e.message}`);
-            lastError = e;
-            // Continue to next gateway
+        // Promise.any resolves as soon as ONE promise fulfills
+        return await Promise.any(promises);
+    } catch (e) {
+        // If AggregateError (all failed), log it
+        if (e instanceof AggregateError) {
+            console.warn(`[IPFS] All gateways failed for ${cid}:`, e.errors.map(err => (err as Error).message));
+        } else {
+            console.warn(`[IPFS] Failed to fetch ${cid}:`, e);
         }
+        // Return empty object on failure to allow UI to render partial data
+        return {};
     }
-
-    // If we get here, all failed
-    console.error(`[IPFS] All gateways failed for ${cid}`);
-    throw lastError || new Error('All IPFS gateways failed');
 }

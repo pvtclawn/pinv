@@ -2,6 +2,7 @@ import { FastifyReply } from 'fastify';
 import { redis, memoryCache } from '../infra/cache';
 import { REVALIDATE_TTL, LOCK_TTL } from '../utils/constants';
 import { getStubImage } from '../infra/renderer';
+import { logToFile } from '../utils/logger';
 
 interface SwrOptions {
     pinId: number;
@@ -14,21 +15,37 @@ interface SwrOptions {
 }
 
 export async function serveWithSWR({ pinId, cacheKey, lockKey, generatorFn, reply, forceRefresh, isBundle }: SwrOptions) {
+    logToFile(`[SWR] Serving ${pinId} key=${cacheKey} Refresh=${forceRefresh}`);
+
+    // Helper: Safe Redis Call
+    const safeRedis = async <T>(operation: () => Promise<T>, fallback: T): Promise<T> => {
+        if (redis.status !== 'ready') return fallback;
+        try {
+            return await operation();
+        } catch (e) {
+            logToFile(`[SWR] Redis Error: ${(e as Error).message}`);
+            return fallback;
+        }
+    };
+
     // 1. Check Memory/Redis
     let cachedBuffer: Buffer | null = null;
     const memCached = memoryCache.get(cacheKey);
-    if (memCached) cachedBuffer = memCached.data;
+    if (memCached) {
+        cachedBuffer = memCached.data;
+    }
 
     if (!cachedBuffer) {
-        try {
-            cachedBuffer = await redis.getBuffer(cacheKey);
-        } catch (e) { }
+        logToFile('[SWR] Checking Redis...');
+        cachedBuffer = await safeRedis(() => redis.getBuffer(cacheKey), null);
     }
 
     // 2. HIT
     if (cachedBuffer) {
         const freshKey = `fresh:${cacheKey}`;
-        const isFresh = await redis.exists(freshKey);
+        const isFresh = await safeRedis(() => redis.exists(freshKey), 0);
+
+        logToFile(`[SWR] HIT. Fresh=${isFresh}, Force=${forceRefresh}`);
 
         // Serve Cache IF:
         // A. It is FRESH
@@ -44,37 +61,51 @@ export async function serveWithSWR({ pinId, cacheKey, lockKey, generatorFn, repl
 
             // Background Update (only if stale)
             if (!isFresh) {
-                const isLocked = await redis.exists(lockKey);
-                if (!isLocked) {
-                    await redis.set(lockKey, '1', 'EX', LOCK_TTL, 'NX');
+                const isLocked = await safeRedis(() => redis.exists(lockKey), 0);
+                if (!isLocked && redis.status === 'ready') {
+                    await safeRedis(() => redis.set(lockKey, '1', 'EX', LOCK_TTL, 'NX'), null);
                     setTimeout(() => {
-                        console.log(`[OG] SWR: Starting background update for ${pinId}`);
-                        redis.set(freshKey, '1', 'EX', REVALIDATE_TTL);
+                        logToFile(`[SWR] Background Update for ${pinId}`);
+                        redis.set(freshKey, '1', 'EX', REVALIDATE_TTL).catch(() => { });
                         generatorFn()
-                            .then(() => redis.del(lockKey))
+                            .then(async (buf) => {
+                                // Update Memory
+                                memoryCache.set(cacheKey, { data: buf, expires: Date.now() + REVALIDATE_TTL * 1000 });
+                                // Update Redis
+                                await redis.setBuffer(cacheKey, buf, 'EX', REVALIDATE_TTL * 10);
+                                await redis.del(lockKey);
+                            })
                             .catch(e => {
-                                console.error("[OG] Background SWR Failed:", e);
-                                redis.del(lockKey);
-                                redis.del(freshKey);
+                                logToFile(`[OG] Background SWR Failed: ${e.message}`);
+                                redis.del(lockKey).catch(() => { });
+                                redis.del(freshKey).catch(() => { });
                             });
                     }, 500);
                 }
             }
             return;
         }
-        console.log(`[OG] Cache STALE + Forced Refresh ('t'). Skipping SWR.`);
+        logToFile(`[OG] Cache STALE + Forced Refresh. Skipping SWR.`);
     }
 
     // 3. MISS (or Force Refresh) - Synchronous Generation
     try {
-        const acquired = await redis.set(lockKey, '1', 'EX', LOCK_TTL, 'NX');
+        logToFile('[SWR] MISS. Generating...');
+        // Try Lock
+        let acquired = await safeRedis(() => redis.set(lockKey, '1', 'EX', LOCK_TTL, 'NX'), null);
 
-        // Coalescing / Polling (Wait for existing lock)
+        // If Redis is down, we treat 'acquired' as null/false by default for safeRedis.
+        // BUT if Redis is down, we should NOT wait/poll, we should just Generate (concurrently).
+        // So: If Redis not ready -> acquired = 'OK' (fake acquire).
+        if (redis.status !== 'ready') acquired = 'OK';
+
+        // Coalescing / Polling (Only if Redis worked and someone else holds lock)
         if (!acquired) {
+            logToFile('[SWR] Locked. Polling...');
             let retries = 20;
             while (retries > 0) {
                 await new Promise(r => setTimeout(r, 500));
-                const fresh = await redis.getBuffer(cacheKey);
+                const fresh = await safeRedis(() => redis.getBuffer(cacheKey), null);
                 if (fresh) {
                     reply.header('Content-Type', 'image/png');
                     reply.header('X-Cache', 'HIT-POLL');
@@ -87,7 +118,17 @@ export async function serveWithSWR({ pinId, cacheKey, lockKey, generatorFn, repl
 
         // Generate Fresh
         const freshBuffer = await generatorFn();
-        await redis.del(lockKey);
+        logToFile('[SWR] Generated Fresh Buffer');
+
+        // Update Caches
+        memoryCache.set(cacheKey, { data: freshBuffer, expires: Date.now() + REVALIDATE_TTL * 1000 });
+
+        if (redis.status === 'ready') {
+            const freshKey = `fresh:${cacheKey}`;
+            await redis.del(lockKey).catch(() => { });
+            await redis.setBuffer(cacheKey, freshBuffer, 'EX', REVALIDATE_TTL * 10).catch(() => { });
+            await redis.set(freshKey, '1', 'EX', REVALIDATE_TTL).catch(() => { });
+        }
 
         const dynamicTTL = isBundle ? 60 : REVALIDATE_TTL;
         reply.header('Content-Type', 'image/png');
@@ -96,8 +137,12 @@ export async function serveWithSWR({ pinId, cacheKey, lockKey, generatorFn, repl
         return reply.send(freshBuffer);
 
     } catch (e: any) {
+        logToFile(`[SWR] Error: ${e.message}`);
         console.error(e);
-        await redis.del(lockKey);
+
+        if (redis.status === 'ready') {
+            await redis.del(lockKey).catch(() => { });
+        }
 
         if (e.message === 'PIN_NOT_FOUND') {
             return reply.code(404).type('image/png').send(getStubImage('Not Found'));

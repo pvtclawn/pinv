@@ -2,11 +2,13 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useWalletClient, useAccount, useChainId } from "wagmi";
-import { encodeBundle, Bundle } from "@/lib/bundle-utils";
+import { encodeBundle, signBundle, Bundle } from "@/lib/bundle-utils";
 
 import { uploadToIpfs } from "@/lib/ipfs-client";
 
 interface ManifestData {
+    title?: string;
+    tagline?: string;
     dataCode: string;
     uiCode: string;
     previewData: any;
@@ -15,7 +17,7 @@ interface ManifestData {
 }
 
 interface UsePreviewRendererReturn {
-    render: (data: ManifestData, pinId: number, version?: string | null) => Promise<{ url: string | null; cid: string | null; signature: string | null; timestamp: number | null }>;
+    render: (data: ManifestData, pinId: number, version?: string | null, shouldSign?: boolean) => Promise<{ url: string | null; cid: string | null; signature: string | null; timestamp: number | null }>;
     isLoading: boolean;
     imageUrl: string | null;
     error: string | null;
@@ -36,7 +38,8 @@ export function usePreviewRenderer(): UsePreviewRendererReturn {
     const render = useCallback(async (
         data: ManifestData,
         pinId: number,
-        version?: string | null
+        version?: string | null,
+        shouldSign: boolean = false
     ): Promise<{ url: string | null; cid: string | null; signature: string | null; timestamp: number | null }> => {
         if (!data.uiCode.trim()) {
             setError("No code provided for preview");
@@ -52,11 +55,29 @@ export function usePreviewRenderer(): UsePreviewRendererReturn {
         setError(null);
 
         try {
+            // 1. Bake current values into Parameters defaults
+            // This ensures that the manifest we upload has the "current" values as the new defaults
+            const bakedParameters = (data.parameters || []).map(p => {
+                if (data.previewData && data.previewData[p.name] !== undefined) {
+                    return {
+                        ...p,
+                        default: data.previewData[p.name],
+                        defaultValue: data.previewData[p.name] // Support both for safety
+                    };
+                }
+                return p;
+            });
+
+            const bakedData = {
+                ...data,
+                parameters: bakedParameters
+            };
+
             // 2. Upload to Pinata via Shared Utility
             // We pass the data object directly; uploadToIpfs handles stringification and Blob creation.
             // Using specific filename for better organization/debugging
             const filename = `pin-${pinId}-${version ? `v${version}-` : ''}preview-${Date.now()}.json`;
-            const cid = await uploadToIpfs(data, filename);
+            const cid = await uploadToIpfs(bakedData, filename);
 
             if (!cid) throw new Error("No CID returned from signed upload");
 
@@ -67,9 +88,11 @@ export function usePreviewRenderer(): UsePreviewRendererReturn {
                 ts: Math.floor(Date.now() / 1000)
             };
 
-            // 4. Sign Bundle - REMOVED per user request for smooth UX
-            // const signature = await signBundle(walletClient, address, pinId, bundle, chainId);
-            const signature = null;
+            // 4. Sign Bundle (Conditionally)
+            let signature: string | null = null;
+            if (shouldSign) {
+                signature = await signBundle(walletClient, address, pinId, bundle, chainId);
+            }
 
             // 5. Construct OG URL
             const encodedBundle = encodeBundle(bundle);

@@ -1,16 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAccount } from "@/components/features/wallet";
+import { Button } from "@/components/ui/button";
+import { Loader2, Save } from "lucide-react";
 import {
+    useReadPinVStoreTitle,
+    useReadPinVStoreTagline,
+    useWritePinVStoreUpdateMetadata,
     useReadPinVPinStores,
-    useSimulatePinVStoreAddVersion,
     useWritePinVStoreAddVersion,
-    pinVConfig
 } from "@/hooks/contracts";
-import { chain } from "@/components/features/wallet";
-import TxButton from "@/components/shared/TxButton";
 import { notify } from "@/components/shared/Notifications";
+import { waitForTransactionReceipt } from "wagmi/actions";
+import { useConfig } from "wagmi";
+import { cn } from "@/lib/utils";
+import { txLink } from "@/components/shared/Utils";
 
 interface SavePinButtonProps {
     pinId: number;
@@ -25,7 +31,8 @@ interface SavePinButtonProps {
     timestamp?: number;
     disabled?: boolean;
     className?: string;
-    onPrepareSave?: () => Promise<void>;
+    onPrepareSave?: () => Promise<{ cid?: string | null; signature?: string | null } | null | undefined>;
+    currentVersion?: string;
 }
 
 export function SavePinButton({
@@ -41,33 +48,51 @@ export function SavePinButton({
     timestamp,
     disabled,
     className,
-    onPrepareSave
+    onPrepareSave,
+    currentVersion
 }: SavePinButtonProps) {
     const router = useRouter();
     const { loggedIn } = useAccount();
+    const config = useConfig();
+    const [isSaving, setIsSaving] = useState(false);
 
-    // 1. Get Factory Address
-    // @ts-ignore - address index signature
-    const factoryAddress = pinVConfig.address[chain.id as keyof typeof pinVConfig.address];
-
-    // 2. Read Store Address for this Pin
     const { data: storeAddress } = useReadPinVPinStores({
         args: [BigInt(pinId)],
         query: { enabled: !!pinId }
     });
 
-    // 3. Update Backend Callback
+    const { data: onChainTitle } = useReadPinVStoreTitle({
+        address: storeAddress,
+        query: { enabled: !!storeAddress }
+    });
+
+    const { data: onChainTagline } = useReadPinVStoreTagline({
+        address: storeAddress,
+        query: { enabled: !!storeAddress }
+    });
+
+    // Derived State
+    const isMetadataLoaded = onChainTitle !== undefined && onChainTagline !== undefined;
+    const isReady = storeAddress && isMetadataLoaded;
+
+    const isDraft = !manifestCid;
+    const needsCodeUpdate = isDraft || (manifestCid && manifestCid !== currentVersion);
+    const needsMetadataUpdate = isMetadataLoaded && ((title !== onChainTitle) || (tagline !== onChainTagline));
+
+    const { writeContractAsync: addVersion } = useWritePinVStoreAddVersion();
+    const { writeContractAsync: updateMetadata } = useWritePinVStoreUpdateMetadata();
+
     const handleBackendUpdate = async () => {
         try {
             const savePayload = {
                 title,
                 tagline,
                 widget: {
-                    dataCode: dataCode,
-                    uiCode: uiCode,
+                    dataCode,
+                    uiCode,
                     parameters,
                     previewData,
-                    userConfig: previewData, // Legacy field
+                    userConfig: previewData,
                     signature: signature || undefined,
                     timestamp: timestamp || undefined
                 }
@@ -79,49 +104,126 @@ export function SavePinButton({
                 body: JSON.stringify(savePayload),
             });
 
-            if (!res.ok) throw new Error("Failed to save pin metadata to backend");
+            if (!res.ok) throw new Error("Failed to save backend");
 
-            notify('Pin version saved on-chain & metadata updated!', 'success');
+            // Use 'save-flow' ID to replace loading toast with success
+            notify(
+                <span className="flex items-center gap-1">
+                    Saved!
+                </span>,
+                'success',
+                { id: 'save-flow' }
+            );
             router.push(`/p/${pinId}`);
             router.refresh();
         } catch (e: any) {
             console.error("Backend sync failed:", e);
-            notify(`Backend sync failed: ${e.message}`, 'error');
+            notify(`Backend sync failed: ${e.message}`, 'error', { id: 'save-flow' });
         }
     };
 
-    // 4. Trigger Logic (One-Click Save)
-    const handleTrigger = async () => {
-        if (manifestCid) return true; // Already uploaded
-        if (onPrepareSave) {
-            try {
-                await onPrepareSave();
-                // Wait a tick to ensure prop propagation? 
-                // React state updates are batched, but async await usually breaks batching or ensures ordering.
-                // The parent re-render will happen.
-                return true;
-            } catch (e) {
-                console.error("Prepare failed", e);
-                return false;
+    const handleClick = async () => {
+        if (!storeAddress || !loggedIn) return;
+
+        const toastId = 'save-flow';
+
+        try {
+            setIsSaving(true);
+            let activeCid = manifestCid;
+
+            // 1. Prepare / Sign Bundle (if needed)
+            if (activeCid && needsCodeUpdate && signature) {
+                // Already valid, proceed
+            } else if (onPrepareSave && needsCodeUpdate) {
+                notify("Signing Bundle...", "loading", { id: toastId });
+                const res = await onPrepareSave();
+                if (!res || !res.cid) throw new Error("Bundle preparation failed");
+                activeCid = res.cid;
             }
+
+            if (!activeCid && needsCodeUpdate) throw new Error("Missing CID");
+
+            // 2. Add Version (Transaction)
+            if (needsCodeUpdate) {
+                notify("Sign Transaction...", "loading", { id: toastId });
+                const hash = await addVersion({
+                    address: storeAddress,
+                    args: [activeCid!]
+                });
+
+                notify("Verifying Tx...", "loading", { id: toastId });
+                await waitForTransactionReceipt(config, { hash });
+                notify(
+                    <span className="flex items-center gap-1">
+                        Version Saved! {txLink(hash, "View Tx")}
+                    </span>,
+                    "success",
+                    { id: toastId, duration: 8000 }
+                );
+            }
+
+            // 3. Update Metadata (if needed)
+            if (needsMetadataUpdate) {
+                notify("Updating Metadata...", "loading", { id: toastId });
+                try {
+                    const hash = await updateMetadata({
+                        address: storeAddress,
+                        args: [title, tagline]
+                    });
+
+                    notify(
+                        <span className="flex items-center gap-1">
+                            Metadata Updated! {txLink(hash, "View Tx")}
+                        </span>,
+                        "success",
+                        { id: toastId, duration: 8000 }
+                    );
+                } catch (e) {
+                    console.warn("Metadata update skipped/failed", e);
+                }
+            }
+
+            // 4. Backend Update
+            await handleBackendUpdate();
+
+        } catch (e: any) {
+            console.error("Save failed", e);
+            notify(e.message || "Save failed", "error", { id: toastId });
+        } finally {
+            setIsSaving(false);
         }
-        return false;
     };
+
+    if (!isReady) {
+        return (
+            <Button variant="ghost" className={className} disabled>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                LOADING...
+            </Button>
+        );
+    }
+
+    if (!needsCodeUpdate && !needsMetadataUpdate) {
+        return (
+            <Button
+                variant="ghost"
+                className={cn(className, "bg-(--brand-blue) text-white opacity-50 hover:bg-(--brand-blue)/90 hover:text-white cursor-not-allowed")}
+                disabled
+            >
+                SAVED
+            </Button>
+        );
+    }
 
     return (
-        <TxButton
-            text="SAVE"
+        <Button
             variant="default"
-            className={className || "min-w-[120px]"}
-            simulateHook={useSimulatePinVStoreAddVersion}
-            writeHook={useWritePinVStoreAddVersion}
-            params={{
-                address: storeAddress,
-                args: [manifestCid || ""], // Will be populated when trigger completes
-                trigger: handleTrigger, // The magic
-                enabled: !!storeAddress && loggedIn && !disabled,
-                onConfirmationSuccess: handleBackendUpdate
-            }}
-        />
+            className={cn(className || "min-w-[120px]", "bg-(--brand-blue) text-white hover:bg-(--brand-blue)/90 border-none")}
+            onClick={handleClick}
+            disabled={disabled || isSaving}
+        >
+            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            {isSaving ? "SAVING..." : "SAVE"}
+        </Button>
     );
 }

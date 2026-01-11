@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Lock, Globe } from "lucide-react";
+import { EditableText } from "@/components/ui/editable-text";
 
 export interface ParameterDefinition {
     name: string;
@@ -68,6 +69,13 @@ export default function PinParams({
         onParametersChange(newParams);
     };
 
+    const updateDescription = (index: number, newDesc: string) => {
+        if (!onParametersChange) return;
+        const newParams = [...parameters];
+        newParams[index] = { ...newParams[index], description: newDesc };
+        onParametersChange(newParams);
+    };
+
     return (
         <div className={cn("space-y-6 w-full", className)}>
             <div className={cn("grid gap-4")}>
@@ -109,10 +117,21 @@ export default function PinParams({
                                     )}
                                 </div>
                             </div>
-                            {param.description && (
-                                <p className="text-xs text-muted-foreground">
-                                    {param.description}
-                                </p>
+
+                            {/* Editable Description (Hint) */}
+                            {onParametersChange ? (
+                                <EditableText
+                                    value={param.description || ""}
+                                    onChange={(val) => updateDescription(index, val)}
+                                    placeholder={`Add hint for ${param.name}...`}
+                                    className="text-xs text-muted-foreground"
+                                />
+                            ) : (
+                                param.description && (
+                                    <p className="text-xs text-muted-foreground">
+                                        {param.description}
+                                    </p>
+                                )
                             )}
                         </div>
                     );
@@ -120,4 +139,5 @@ export default function PinParams({
             </div>
         </div>
     );
+
 }

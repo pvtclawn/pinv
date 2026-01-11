@@ -3,6 +3,8 @@
 import { useState, useCallback } from "react";
 
 export interface GenerationResult {
+    title?: string;
+    tagline?: string;
     dataCode: string;
     uiCode: string;
     parameters: Array<{
@@ -66,8 +68,10 @@ export function useWidgetGeneration(): UseWidgetGenerationReturn {
             const data = await response.json();
 
             const generationResult: GenerationResult = {
-                dataCode: data.lit_action_code || "",
-                uiCode: data.react_code || "",
+                title: data.title,
+                tagline: data.tagline,
+                dataCode: data.data_code || "",
+                uiCode: data.ui_code || "",
                 parameters: (data.parameters || []).map((p: any) => ({ ...p, hidden: true })),
                 previewData: data.preview_data || {},
             };

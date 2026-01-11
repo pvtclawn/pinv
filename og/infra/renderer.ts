@@ -2,6 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { spawn } from 'child_process';
 import { APP_URL, WORKER_TIMEOUT_MS } from '../utils/constants';
+import { logToFile } from '../utils/logger';
 
 // Helper: Stub Image
 export function getStubImage(text: string): Buffer {
@@ -16,9 +17,25 @@ export function getStubImage(text: string): Buffer {
 
 // Helper: Render Image in Worker
 export async function renderImageInWorker(uiCode: string, props: { [key: string]: any }, width: number, height: number): Promise<Buffer> {
-    const workerCmd = path.join(__dirname, '../worker.js'); // Adjusted path: now in lib/, worker is in ../
+    const workerCmd = path.join(__dirname, '../worker.js');
     const tSpawnStart = performance.now();
-    const child = spawn('bun', [workerCmd], { stdio: ['pipe', 'pipe', 'pipe'] });
+
+    // Use the same runtime that launched the server (bun)
+    const runtime = process.argv[0];
+    logToFile(`[Renderer] Spawning worker: ${runtime} ${workerCmd}`);
+
+    // Safety: Verify worker exists
+    if (!fs.existsSync(workerCmd)) {
+        console.error('[OG] Worker file missing:', workerCmd);
+        throw new Error('WORKER_MISSING');
+    }
+
+    const child = spawn(runtime, [workerCmd], { stdio: ['pipe', 'pipe', 'pipe'] });
+
+    // CRITICAL: Handle spawn errors to prevent parent crash
+    child.on('error', (err) => {
+        console.error(`[OG] Worker Spawn Failed: ${err.message}`);
+    });
 
     const inputPayload = JSON.stringify({
         uiCode,

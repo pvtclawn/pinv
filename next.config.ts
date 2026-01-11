@@ -38,6 +38,13 @@ const cspConfig = {
     "http://localhost:8080",
     "http://127.0.0.1:8080",
     "https://pintv-og.fly.dev",
+    "https://ipfs.io",
+    "https://*.ipfs.io",
+    "https://dweb.link",
+    "https://*.dweb.link",
+    "https://*.ipfs.dweb.link",
+    "https://*.ipfs.dweb.link",
+    "https://green-impossible-swordfish-523.mypinata.cloud",
   ],
 };
 

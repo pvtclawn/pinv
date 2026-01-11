@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 export async function PATCH(
     request: NextRequest,
@@ -8,7 +9,14 @@ export async function PATCH(
         const { id: idStr } = await params;
         const id = parseInt(idStr);
 
-        const updates = await request.json();
+        // Consume body (even if ignored) to prevent connection issues
+        await request.json();
+
+        // Force Cache Invalidation
+        revalidateTag('pin-data', {}); // Invalidate Data Cache
+        revalidatePath(`/p/${id}`); // Invalidate Page Cache
+
+        console.log(`[API] Revalidated cache for Pin ${id}`);
 
         return NextResponse.json({ success: true });
     } catch (error) {

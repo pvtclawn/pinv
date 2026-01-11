@@ -59,35 +59,34 @@ export default function PinGrid({ initialPins }: PinGridProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                 {pins.map((pin) => (
                     <Link href={`/p/${pin.id}`} key={pin.id} className="block group h-full">
-                        <Card className="h-full flex flex-col p-0 border-x-0 md:border-x transition-all duration-300 md:hover:-translate-y-1 md:hover:shadow-xl">
+                        <Card className="h-full flex flex-col p-0 transition-all duration-300 hover:shadow-lg border-muted/40 overflow-hidden bg-card/50 hover:bg-card">
                             {/* Header */}
-                            <div className="flex justify-between items-start p-6 pb-4">
-                                <div className="space-y-1">
-                                    <h2 className="text-xl font-bold font-orbitron text-foreground md:group-hover:text-primary transition-colors truncate pr-4">
+                            <div className="flex justify-between items-start p-5 pb-3">
+                                <div className="space-y-1 min-w-0">
+                                    <h2 className="text-lg font-bold font-orbitron text-foreground md:group-hover:text-primary transition-colors truncate pr-2">
                                         {pin.title}
                                     </h2>
                                 </div>
-                                <div className="px-2 py-1 bg-muted/20 border border-border text-[10px] font-mono uppercase tracking-wider text-muted-foreground rounded-sm">
-                                    V1.0
+                                <div className="shrink-0 px-2 py-0.5 bg-muted/30 text-[10px] font-mono font-medium text-muted-foreground rounded-full">
+                                    {`v${pin.version || '1'}`}
                                 </div>
                             </div>
 
                             {/* Preview Window (Data Enclave) */}
-                            <DataEnclave className="w-full aspect-3/2 p-0 overflow-hidden md:group-hover:border-primary/30 transition-colors border-y border-transparent relative">
+                            <DataEnclave className="w-full aspect-3/2 p-0 overflow-hidden relative bg-muted/10">
                                 {/* Background Image */}
                                 <PinThumbnail
-                                    src={buildOgUrl(pin.id, {}, true, pin)}
+                                    src={buildOgUrl(pin.id, {}, false, pin)}
                                     alt={pin.title}
-                                    className="md:group-hover:scale-105"
+                                    className="object-cover w-full h-full transition-transform duration-500 md:group-hover:scale-105"
                                 />
                             </DataEnclave>
 
                             {/* Footer */}
-                            <div className="mt-auto mx-6 border-t border-dashed border-border py-4 flex justify-between items-center">
-                                <span className="text-xs font-mono text-muted-foreground">
-                                    {pin.tagline}
-                                </span>
-                                <ArrowRight className="w-4 h-4 text-muted-foreground md:group-hover:text-primary md:group-hover:translate-x-1 transition-all" />
+                            <div className="mt-auto px-5 py-4 flex justify-between items-center bg-transparent">
+                                <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                                    {pin.tagline || "No description provided."}
+                                </p>
                             </div>
                         </Card>
                     </Link>

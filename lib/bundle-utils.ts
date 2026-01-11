@@ -29,26 +29,26 @@ export async function signBundle(
     } as const;
 
     const types = {
-        CustomizeOG: [
-            { name: 'pinId', type: 'uint256' },
-            { name: 'ver', type: 'string' },
-            { name: 'paramsHash', type: 'bytes32' },
-            { name: 'ts', type: 'uint256' }
+        PinConfiguration: [
+            { name: 'Pin_ID', type: 'uint256' },
+            { name: 'Content_CID', type: 'string' },
+            { name: 'Configuration_Hash', type: 'bytes32' },
+            { name: 'Timestamp', type: 'uint256' }
         ]
     } as const;
 
     const message = {
-        pinId: BigInt(pinId),
-        ver: bundle.ver || '',
-        paramsHash: paramsHash,
-        ts: BigInt(bundle.ts)
+        Pin_ID: BigInt(pinId),
+        Content_CID: bundle.ver || '',
+        Configuration_Hash: paramsHash,
+        Timestamp: BigInt(bundle.ts)
     };
 
     const signature = await walletClient.signTypedData({
         account,
         domain,
         types,
-        primaryType: 'CustomizeOG',
+        primaryType: 'PinConfiguration',
         message
     });
 

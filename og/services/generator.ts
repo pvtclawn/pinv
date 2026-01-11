@@ -81,8 +81,12 @@ export async function generateOgImage(pinId: number, queryParams: Record<string,
     }
 
     if (!uiCode) {
-        console.warn(`[OG] No UI Code for Pin ${pinId}`);
-        throw new Error('NO_UI_CODE');
+        console.warn(`[OG] No UI Code for Pin ${pinId} (IPFS Failure?)`);
+        // throw new Error('NO_UI_CODE');
+        // Fallback to basic image? Or just 404? 
+        // For now, let's allow it to fail but logged clearly. 
+        // Actually, returning a "Generation Failed" image would be better UX.
+        throw new Error('NO_UI_CODE'); // Controllers handles this?
     }
 
     const props = { ...baseProps, title: pin.title, tagline: pin.tagline };

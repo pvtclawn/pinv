@@ -1,7 +1,7 @@
 import { createPublicClient, http, zeroAddress } from 'viem';
 import { baseSepolia, base } from 'viem/chains';
 import { pinVConfig, pinVStoreAbi } from '../utils/contracts';
-import { fetchFromIpfs } from '../../lib/ipfs';
+import { fetchIpfsJson } from './ipfs';
 import { Pin } from '../../types';
 
 const chainId = process.env.NEXT_PUBLIC_CHAIN_ID || '84532';
@@ -14,19 +14,10 @@ const publicClient = createPublicClient({
 
 // Simple LRU Cache
 const pinCache = new Map<number, { data: Pin, expires: number }>();
-const CACHE_TTL = 5 * 1000; // 5 seconds (Reduced from 60s to fix "Previous One" stale issue)
-
-// IPFS Cache (CID -> Content)
-// CIDs are immutable, so we can cache them for a very long time (e.g., 24h or indefinite)
-const ipfsCache = new Map<string, { data: any, expires: number }>();
-const IPFS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
-// Re-use in-flight requests to prevent Thundering Herd
-const pendingFetches = new Map<string, Promise<any>>();
+const CACHE_TTL = 5 * 1000;
 
 export async function getPin(id: number, version?: bigint): Promise<Pin | null> {
-    // Check Cache (Only if looking for latest or if we want to cache specific versions later)
-    // For now, if version is provided, we bypass cache to ensure freshness, or cache by ID+Ver.
-    // Simplifying: Specific version requests bypass simple ID cache.
+    // Check Cache
     if (!version) {
         const cached = pinCache.get(id);
         if (cached && cached.expires > Date.now()) {
@@ -55,14 +46,12 @@ export async function getPin(id: number, version?: bigint): Promise<Pin | null> 
         let title, tagline, targetVer;
 
         if (version) {
-            // If version provided, we only need metadata + that version
             targetVer = version;
             [title, tagline] = await Promise.all([
                 publicClient.readContract({ address: storeAddress, abi: pinVStoreAbi, functionName: 'title' }),
                 publicClient.readContract({ address: storeAddress, abi: pinVStoreAbi, functionName: 'tagline' }),
             ]);
         } else {
-            // Standard Flow
             let latestVer;
             [title, tagline, latestVer] = await Promise.all([
                 publicClient.readContract({ address: storeAddress, abi: pinVStoreAbi, functionName: 'title' }),
@@ -80,41 +69,7 @@ export async function getPin(id: number, version?: bigint): Promise<Pin | null> 
 
             if (ipfsId) {
                 const cid = ipfsId as string;
-                // Check IPFS Cache
-                const cachedIpfs = ipfsCache.get(cid);
-                if (cachedIpfs && cachedIpfs.expires > Date.now()) {
-                    console.log(`[Perf] IPFS Cache Hit: ${cid}`);
-                    widgetData = cachedIpfs.data;
-                } else {
-                    // COALESCING: Check pending fetches
-                    if (pendingFetches.has(cid)) {
-                        console.log(`[Perf] IPFS Coalesced: ${cid}`);
-                        widgetData = await pendingFetches.get(cid);
-                    } else {
-                        console.log(`[Perf] IPFS Cache Miss: ${cid}`);
-
-                        // Create Promise and store it
-                        const fetchPromise = fetchFromIpfs(cid).then(data => {
-                            // Cache It (Long Live) - ONLY on success
-
-                            // MEMORY SAFETY: Prevent unbounded growth
-                            if (ipfsCache.size >= 1000) {
-                                // Delete oldest (FIFO)
-                                const oldestKey = ipfsCache.keys().next().value;
-                                if (oldestKey) ipfsCache.delete(oldestKey);
-                            }
-
-                            ipfsCache.set(cid, { data, expires: Date.now() + IPFS_CACHE_TTL });
-                            return data;
-                        }).finally(() => {
-                            // Cleanup pending
-                            pendingFetches.delete(cid);
-                        });
-
-                        pendingFetches.set(cid, fetchPromise);
-                        widgetData = await fetchPromise;
-                    }
-                }
+                widgetData = await fetchIpfsJson(cid);
             }
         }
 

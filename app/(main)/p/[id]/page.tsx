@@ -19,7 +19,18 @@ export async function generateMetadata(
     const { id: idStr } = await params;
     const resolvedSearchParams = await searchParams;
     const pinId = parseInt(idStr);
-    const pin = await getPin(pinId);
+
+    // Decode Bundle to get Version
+    let version: number | undefined;
+    const rawB = resolvedSearchParams?.['b'];
+    if (rawB && typeof rawB === 'string') {
+        const bundle = decodeBundle(rawB);
+        if (bundle && bundle.ver) {
+            try { version = parseInt(bundle.ver); } catch (e) { }
+        }
+    }
+
+    const pin = await getPin(pinId, version);
 
     if (!pin) {
         return {
@@ -72,27 +83,38 @@ export async function generateMetadata(
 
 export default async function PinPage({ params, searchParams }: Props) {
     const { id: idStr } = await params;
-    const resolvedSearchParams = await searchParams; // Next.js 15+ needs await, sticking to safe pattern
+    const resolvedSearchParams = await searchParams;
     const pinId = parseInt(idStr);
-    const pin = await getPin(pinId);
+
+    // 1. Decode Bundle FIRST to get version
+    const initialParams: Record<string, string> = {};
+    let version: number | undefined;
+    let bundleParams = {};
+
+    const rawB = resolvedSearchParams?.['b'];
+    if (rawB && typeof rawB === 'string') {
+        const bundle = decodeBundle(rawB);
+        if (bundle) {
+            if (bundle.ver) {
+                try { version = parseInt(bundle.ver); } catch (e) { }
+            }
+            if (bundle.params) {
+                bundleParams = bundle.params;
+            }
+        }
+    }
+
+    // 2. Fetch Pin with Version
+    const pin = await getPin(pinId, version);
 
     if (!pin) {
         notFound();
     }
 
-    // Convert searchParams to simple Record<string, string> for PinParams
-    const initialParams: Record<string, string> = {};
+    // 3. Merge Params: Bundle -> SearchParams (Higher Priority)
+    Object.assign(initialParams, bundleParams);
 
-    // 1. Decode Bundle if present (Priority)
-    const rawB = resolvedSearchParams?.['b'];
-    if (rawB && typeof rawB === 'string') {
-        const bundle = decodeBundle(rawB);
-        if (bundle && bundle.params) {
-            Object.assign(initialParams, bundle.params);
-        }
-    }
-
-    // 2. Apply other params (Overrides)
+    // 4. Apply other params (Overrides)
     if (resolvedSearchParams) {
         Object.entries(resolvedSearchParams).forEach(([key, value]) => {
             if (typeof value === 'string' && key !== 'b' && key !== 'sig') {

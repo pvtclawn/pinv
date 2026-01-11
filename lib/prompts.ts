@@ -21,8 +21,10 @@ You MUST return **one single JSON object** as the entire response.
 
 Schema:
 {
-  "lit_action_code": "string",      // JS code for Lit Action
-  "react_code": "string",           // React functional component code
+  "title": "string",                // Short, punchy name (e.g., "ETH Price Tracker")
+  "tagline": "string",              // Comma-separated tags (e.g., "crypto, eth, tracker")
+  "data_code": "string",      // JS code for Lit Action
+  "ui_code": "string",           // React functional component code
   "parameters": [                   // Input parameters
     {
       "name": "string",
@@ -36,11 +38,11 @@ Schema:
 
 Additional global rules:
 
-- The values of "lit_action_code" and "react_code" MUST be self-contained code snippets, not wrapped in backticks.
+- The values of "data_code" and "ui_code" MUST be self-contained code snippets, not wrapped in backticks.
 - "preview_data" MUST exactly match the shape and types of the props expected by the React component.
 - Parameter names MUST be consistent:
   - Same exact string in "parameters",
-  - In \`jsParams\` reads inside lit_action_code,
+  - In \`jsParams\` reads inside data_code,
   - And in React props / descriptions.
 
 ==================================================
@@ -124,12 +126,13 @@ Defensive coding requirements (CRITICAL):
     - Example: \`if (data && data.items && Array.isArray(data.items)) { ... }\`
   - NEVER assume nested properties exist without checking each level.
   - Provide **safe, meaningful fallbacks**:
-    - Use empty arrays \`[]\`, \`0\`, simple strings (\`"Unknown"\`, \`"No data"\`) instead of \`null\` or throwing.
+    - Use empty arrays \`[]\`, \`0\`, or explicit error states (\`"Data Error"\`, \`"Unavailable"\`) instead of \`null\` or throwing.
+    - **CRITICAL**: Do NOT return hardcoded "fake" data (like ETH price) for the fallback if the real fetch fails. This is misleading. Return an error state or empty state instead.
     - When primary fields are missing, try to use alternative fields to construct a still-interesting output.
 
 No-blank-screen contract:
-- Even if all APIs fail, the Lit Action MUST still return a valid object matching the expected props with usable default content (e.g., a “setup” or “no data yet” state).
-- The UI MUST be able to render this object without crashing.
+- Even if all APIs fail, the Lit Action MUST still return a valid object.
+- The UI should reflect that data is missing (e.g., "N/A" or "Server Busy") rather than showing a fake price.
 
 Code style:
 - Use a top-level \`const main = async (jsParams) => { ... }\` and then return \`main;\` as the last expression.
@@ -147,15 +150,25 @@ Example pattern (ADAPT, DO NOT COPY LITERALLY):
 Example Wrapper:
 const main = async (jsParams) => {
   console.log("Starting widget execution with params:", jsParams);
-  let result = { ...defaults };
+  
+  // Default to an error/empty state
+  let result = { 
+    title: "No Data", 
+    price: "0.00", 
+    trend: "flat", 
+    error: true 
+  };
+
   try {
     // fetch and process
     console.log("Fetching external data...");
-    // ...
+    // const fetched = ...
+    // result = { ...fetched };
     console.log("Data processed successfully");
   } catch (e) {
     console.error("Widget execution failed:", e);
-    // keep defaults
+    // result remains in error state or updates to specific error message
+    result.title = "Service Unavailable";
   }
   return result;
 };
@@ -238,7 +251,7 @@ Recommended layout pattern (not mandatory, but a great default):
 
 Example React pattern (ADAPT, DO NOT COPY LITERALLY):
 
-"react_code": "import { TrendingUp } from 'lucide-react';\\n\\nexport default function Widget({ title, primaryMetric, changePct, trend, label, items }) {\\n  const isUp = trend === 'up';\\n  const changeText = \`\${changePct.toFixed(1)}%\`;\\n\\n  return (\\n    <div style={{ display: 'flex', flexDirection: 'column', width: '1200px', height: '800px', background: 'linear-gradient(135deg, #020617, #0f172a)', color: '#e5e7eb', padding: '64px', justifyContent: 'space-between' }}>\\n      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>\\n        <div style={{ display: 'flex', flexDirection: 'column' }}>\\n          <div style={{ fontSize: '20px', letterSpacing: '0.12em', textTransform: 'uppercase', opacity: 0.7 }}>Live Snapshot</div>\\n          <div style={{ fontSize: '36px', fontWeight: 700 }}>{title}</div>\\n        </div>\\n        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px' }}>\\n          <TrendingUp style={{ width: '40px', height: '40px' }} />\\n          <div style={{ fontSize: '24px', opacity: 0.8 }}>{label}</div>\\n        </div>\\n      </div>\\n\\n      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'baseline', gap: '24px' }}>\\n        <div style={{ fontSize: '112px', fontWeight: 800 }}>{primaryMetric.toFixed(2)}</div>\\n        <div style={{ display: 'flex', flexDirection: 'column' }}>\\n          <div style={{ fontSize: '28px', fontWeight: 600, color: isUp ? '#4ade80' : '#f97373' }}>{isUp ? '▲' : '▼'} {changeText}</div>\\n          <div style={{ fontSize: '20px', opacity: 0.7 }}>{isUp ? 'On the rise' : trend === 'down' ? 'Cooling off' : 'Holding steady'}</div>\\n        </div>\\n      </div>\\n\\n      <div style={{ display: 'flex', flexDirection: 'row', gap: '24px' }}>\\n        {Array.isArray(items) && items.map((item, idx) => (\\n          <div key={idx} style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '20px', borderRadius: '24px', background: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(148, 163, 184, 0.4)' }}>\\n            <div style={{ fontSize: '18px', opacity: 0.8 }}>{item.label}</div>\\n            <div style={{ fontSize: '32px', fontWeight: 600 }}>{item.value}</div>\\n          </div>\\n        ))}\\n      </div>\\n\\n      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', fontSize: '18px', opacity: 0.7 }}>\\n        <div>Data refreshed on load</div>\\n        <div>Made with PinV</div>\\n      </div>\\n    </div>\\n  );\\n}\\n"
+"ui_code": "import { TrendingUp } from 'lucide-react';\\n\\nexport default function Widget({ title, primaryMetric, changePct, trend, label, items }) {\\n  const isUp = trend === 'up';\\n  const changeText = \`\${changePct.toFixed(1)}%\`;\\n\\n  return (\\n    <div style={{ display: 'flex', flexDirection: 'column', width: '1200px', height: '800px', background: 'linear-gradient(135deg, #020617, #0f172a)', color: '#e5e7eb', padding: '64px', justifyContent: 'space-between' }}>\\n      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>\\n        <div style={{ display: 'flex', flexDirection: 'column' }}>\\n          <div style={{ fontSize: '20px', letterSpacing: '0.12em', textTransform: 'uppercase', opacity: 0.7 }}>Live Snapshot</div>\\n          <div style={{ fontSize: '36px', fontWeight: 700 }}>{title}</div>\\n        </div>\\n        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px' }}>\\n          <TrendingUp style={{ width: '40px', height: '40px' }} />\\n          <div style={{ fontSize: '24px', opacity: 0.8 }}>{label}</div>\\n        </div>\\n      </div>\\n\\n      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'baseline', gap: '24px' }}>\\n        <div style={{ fontSize: '112px', fontWeight: 800 }}>{primaryMetric.toFixed(2)}</div>\\n        <div style={{ display: 'flex', flexDirection: 'column' }}>\\n          <div style={{ fontSize: '28px', fontWeight: 600, color: isUp ? '#4ade80' : '#f97373' }}>{isUp ? '▲' : '▼'} {changeText}</div>\\n          <div style={{ fontSize: '20px', opacity: 0.7 }}>{isUp ? 'On the rise' : trend === 'down' ? 'Cooling off' : 'Holding steady'}</div>\\n        </div>\\n      </div>\\n\\n      <div style={{ display: 'flex', flexDirection: 'row', gap: '24px' }}>\\n        {Array.isArray(items) && items.map((item, idx) => (\\n          <div key={idx} style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '20px', borderRadius: '24px', background: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(148, 163, 184, 0.4)' }}>\\n            <div style={{ fontSize: '18px', opacity: 0.8 }}>{item.label}</div>\\n            <div style={{ fontSize: '32px', fontWeight: 600 }}>{item.value}</div>\\n          </div>\\n        ))}\\n      </div>\\n\\n      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', fontSize: '18px', opacity: 0.7 }}>\\n        <div>Data refreshed on load</div>\\n        <div>Made with PinV</div>\\n      </div>\\n    </div>\\n  );\\n}\\n"
 
 CRITICAL:
   - You have to adjust design code if the user prompt explicitly requests something different from above.
@@ -260,7 +273,7 @@ Types:
   - Examples: \`viewer_fid\`, \`viewer_username\`, \`timestamp\`, \`current_chain_id\`, \`cast_hash\`.
 
 Rules:
-- Every value read from \`jsParams\` in \`lit_action_code\` MUST have a matching entry in "parameters".
+- Every value read from \`jsParams\` in \`data_code\` MUST have a matching entry in "parameters".
 - Always read parameters defensively, e.g.:
 
   \`const username = typeof jsParams.username === 'string' ? jsParams.username : 'anonymous';\`

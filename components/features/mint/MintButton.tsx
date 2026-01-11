@@ -26,7 +26,7 @@ export default function MintButton({ className, disabled }: MintButtonProps) {
     const mintParams = {
         to: address,
         title: "New Pin",
-        tagline: "Freshly minted",
+        tagline: "",
         initialIpfsId: "",
         data: "0x" as `0x${string}`,
     };

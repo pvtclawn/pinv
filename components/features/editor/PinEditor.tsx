@@ -7,6 +7,8 @@ import { Pin } from "@/types";
 import { useWidgetGeneration, useDataCodeRunner, usePreviewRenderer } from "@/hooks";
 import { cn } from "@/lib/utils";
 import { encodeBundle } from "@/lib/bundle-utils";
+import { EditableText } from "@/components/ui/editable-text";
+import { TagsInput } from "@/components/ui/tags-input";
 
 import { EditorPrompt } from "./partials/EditorPrompt";
 import { EditorConfig } from "./partials/EditorConfig";
@@ -133,15 +135,38 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
                     signature: initialWidget.signature,
                     timestamp: initialWidget.timestamp
                 });
+            } else if (pin?.version) {
+                // FALLBACK OPTIMIZATION:
+                // If we have a version but no signature (legacy pin or simple view),
+                // we can still use the ID-based OG endpoint directly.
+                // This avoids re-uploading to IPFS just to see what we already have.
+
+                const baseUrl = `/og/${pinId}`;
+                // We don't have a bundle signed, so we rely on the backend fetching the version by ID.
+                const url = `${baseUrl}?t=${Date.now()}`;
+
+                setCachedImageUrl(url);
+                setLastPreviewedState({
+                    uiCode: initialWidget.uiCode,
+                    dataCode: initialWidget.dataCode || '',
+                    parameters: initialWidget.parameters || [],
+                    previewData: initialWidget.previewData,
+                    cid: pin.version, // Use version ID as the "CID" for dirty checking
+                    signature: undefined,
+                    timestamp: undefined
+                });
             } else {
-                // Fallback: Re-generate preview (requires wallet signature)
+                // New Pin or Unsaved Changes: Re-generate preview (requires IPFS upload)
+                // Pass false for shouldSign
                 renderPreview({
                     dataCode: initialWidget.dataCode || '',
                     uiCode: initialWidget.uiCode,
                     previewData: initialWidget.previewData,
                     parameters: initialWidget.parameters || [],
-                    userConfig: initialWidget.userConfig
-                }, pinId, pin?.version).then((res) => {
+                    userConfig: initialWidget.userConfig,
+                    title: pin?.title,
+                    tagline: pin?.tagline
+                }, pinId, pin?.version, false).then((res) => {
                     if (res && res.cid) {
                         setLastPreviewedState({
                             uiCode: initialWidget.uiCode,
@@ -184,6 +209,10 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
 
         const result = await generate(finalPrompt);
         if (result) {
+            // Apply Metadata if AI suggested it
+            if (result.title) setTitle(result.title);
+            if (result.tagline) setTagline(result.tagline);
+
             setDataCode(result.dataCode);
             setUICode(result.uiCode);
             setParameters(result.parameters);
@@ -297,8 +326,20 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
             {hasGenerated ? (
                 <>
                     <PinDisplayCard
-                        title={title}
-                        description={tagline}
+                        title={
+                            <EditableText
+                                value={title}
+                                onChange={setTitle}
+                                placeholder="Untitled Pin"
+                                className="text-xl md:text-2xl font-bold"
+                            />
+                        }
+                        description={
+                            <TagsInput
+                                value={tagline}
+                                onChange={setTagline}
+                            />
+                        }
                         imageSrc={runnerImage || previewImageUrl || cachedImageUrl}
                         isLoading={isGenerating || isPreviewLoading || isDataCodeRunning}
                     >
@@ -341,14 +382,17 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
                                     manifestCid={!isDirty && lastPreviewedState ? lastPreviewedState.cid : null}
                                     signature={!isDirty && lastPreviewedState ? lastPreviewedState.signature : undefined}
                                     timestamp={!isDirty && lastPreviewedState ? lastPreviewedState.timestamp : undefined}
+                                    currentVersion={pin?.version}
                                     onPrepareSave={async () => {
                                         const res = await renderPreview({
+                                            title: title,
+                                            tagline: tagline,
                                             dataCode: dataCode,
                                             uiCode: uiCode,
                                             previewData: previewData,
                                             parameters: parameters,
                                             userConfig: initialWidget?.userConfig
-                                        }, pinId, pin?.version);
+                                        }, pinId, pin?.version, true); // true = SIGN BUNDLE for Save
 
                                         if (res && res.cid) {
                                             setLastPreviewedState({
@@ -360,7 +404,9 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
                                                 signature: res.signature || undefined,
                                                 timestamp: res.timestamp || undefined
                                             });
+                                            return res; // Return result for sequential flow
                                         }
+                                        return null;
                                     }}
                                     disabled={isDataCodeRunning || isPreviewLoading || isDirty}
                                     className="w-full h-10 px-2 font-bold tracking-wider"
