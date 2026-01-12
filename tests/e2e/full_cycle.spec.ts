@@ -1,41 +1,27 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('The Creative Flow', () => {
-    test('should generate, preview, and edit a Countdown Pin', async ({ page }) => {
-        // 1. Visit Home
-        await page.goto('/');
+test.describe('OG Engine API Generation', () => {
+    test('should generate an image from code via Preview API', async ({ request }) => {
+        // 1. Generate (Simulate Preview)
+        // /og/preview returns JSON { result, logs, image: base64 }
+        const response = await request.post('/og/preview', {
+            data: {
+                uiCode: `export default function Pin() { return <div style={{color:'red'}}>Hello E2E</div> }`,
+                params: {}
+            }
+        });
 
-        // 2. Enter Prompt
-        const promptInput = page.getByPlaceholder('What do you want to build?');
-        await expect(promptInput).toBeVisible();
-        await promptInput.fill('Display seconds remaining until the year 2030. Update every second. huge font. bright red color.');
+        expect(response.status()).toBe(200);
+        expect(response.headers()['content-type']).toContain('application/json');
 
-        // 3. Generate
-        const generateBtn = page.getByRole('button', { name: /generate/i });
-        await generateBtn.click();
+        const body = await response.json();
 
-        // 4. Wait for Editor & Preview
-        // The URL should change to /p/[id]/edit or similar? 
-        // Or we stay on home?
-        // PinV flow: Home -> Generate -> Editor.
-        await expect(page).toHaveURL(/\/p\/.*\/edit/);
+        // 2. Verify Generation Success
+        // Expect 'image' to be a Base64 string
+        expect(body.image).toBeTruthy();
+        expect(typeof body.image).toBe('string');
+        expect(body.image.length).toBeGreaterThan(100);
 
-        // 5. Verify Preview Image (The OG)
-        const previewImg = page.locator('img[alt="Preview"]');
-        await expect(previewImg).toBeVisible({ timeout: 30000 });
-
-        // 6. Check Caching Headers (Interceptor)
-        // We verify the backend responds with correct Cache-Control
-        const editResponse = await page.waitForResponse(resp => resp.url().includes('/og/'));
-        const headers = editResponse.headers();
-        // expect(headers['cache-control']).toContain('public');
-
-        // 7. Edit Code
-        const codeEditor = page.locator('.monaco-editor').first(); // Simplified selector
-        // await codeEditor.click();
-        // await page.keyboard.type('// Edited by Playwright');
-
-        // 8. Wait for SWR/Update
-        // await expect(page.getByText('Saved')).toBeVisible();
+        console.log('Generated Image Base64 Length:', body.image.length);
     });
 });

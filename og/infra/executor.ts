@@ -166,7 +166,7 @@ if (typeof main === 'function') {
         console.log('[Executor] Raw Lit Response:', JSON.stringify(res, null, 2));
 
         // Format logs
-        const logs = (res.logs || "").split('\n');
+        const netLogs = (res.logs || "").split('\n');
 
         // Parse result
         let result = null;
@@ -177,14 +177,14 @@ if (typeof main === 'function') {
                 console.log('[Executor] Parsed Result:', result);
             } catch (e) {
                 console.error('[Executor] Failed to parse response:', e);
-                logs.push(`Error parsing response: ${e}`);
+                netLogs.push(`Error parsing response: ${e}`);
             }
         } else {
             console.warn('[Executor] No response field in result');
             // Attempt to extract from logs if panic?
         }
 
-        return { result, logs };
+        return { result, logs: netLogs };
 
     } catch (e: any) {
         console.error('[Executor] Execution failed:', e);

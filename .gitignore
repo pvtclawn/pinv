@@ -58,3 +58,12 @@ contracts/out/
 contracts/broadcast/
 contracts/cache/
 
+.env*.local
+
+# E2E Test Artifacts
+test-results/
+playwright-report/
+blob-report/
+*.traineddata
+og/debug_last_svg.svg
+

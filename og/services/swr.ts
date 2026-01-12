@@ -131,7 +131,7 @@ export async function serveWithSWR({ pinId, cacheKey, lockKey, generatorFn, repl
         if (redis.status === 'ready') {
             const freshKey = `fresh:${cacheKey}`;
             await redis.del(lockKey).catch(() => { });
-            await redis.setBuffer(cacheKey, freshBuffer, 'EX', REVALIDATE_TTL * 10).catch(() => { });
+            await redis.set(cacheKey, freshBuffer, 'EX', REVALIDATE_TTL * 10).catch(() => { });
             await redis.set(freshKey, '1', 'EX', REVALIDATE_TTL).catch(() => { });
         }
 

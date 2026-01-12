@@ -12,6 +12,7 @@ import { farcasterMiniApp } from '@farcaster/miniapp-wagmi-connector'
 export const supportedChains = {
     main: chains.base,
     test: chains.baseSepolia,
+    local: chains.foundry,
 }
 
 const envChainKey = (process.env.NEXT_PUBLIC_CHAIN || 'test').toLowerCase()
@@ -37,6 +38,7 @@ export function getConfig() {
         transports: {
             [chains.base.id]: http(),
             [chains.baseSepolia.id]: http(),
+            [chains.foundry.id]: http(),
         },
     })
 }

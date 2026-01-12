@@ -21,6 +21,7 @@ export default defineConfig({
                 PinV: {
                     [chains.baseSepolia.id]: (process.env.NEXT_PUBLIC_PINV_ADDRESS_BASE_SEPOLIA as `0x${string}`) || zeroAddress,
                     [chains.base.id]: (process.env.NEXT_PUBLIC_PINV_ADDRESS_BASE as `0x${string}`) || zeroAddress,
+                    [chains.foundry.id]: (process.env.NEXT_PUBLIC_PINV_ADDRESS_FOUNDRY as `0x${string}`) || zeroAddress,
                 }
             }
         })

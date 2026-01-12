@@ -1,0 +1,6 @@
+{
+    "uiCode": "export default () => <div style={{ fontSize: 80, background: 'purple', color: 'white' }}>UPDATED VERSION</div>",
+    "meta": {
+        "title": "Updated Version Pin"
+    }
+}

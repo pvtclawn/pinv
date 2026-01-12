@@ -11,6 +11,7 @@ import {
 
 /**
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const pinVAbi = [
@@ -597,15 +598,18 @@ export const pinVAbi = [
 
 /**
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const pinVAddress = {
   8453: '0x0000000000000000000000000000000000000000',
+  31337: '0x0000000000000000000000000000000000000000',
   84532: '0xfB5118bcAec3b6D774307E777679C7Bc16dcE020',
 } as const
 
 /**
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const pinVConfig = { address: pinVAddress, abi: pinVAbi } as const
@@ -960,6 +964,7 @@ export const pinVStoreAbi = [
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link pinVAbi}__
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useReadPinV = /*#__PURE__*/ createUseReadContract({
@@ -971,6 +976,7 @@ export const useReadPinV = /*#__PURE__*/ createUseReadContract({
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"BASIS_POINTS"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useReadPinVBasisPoints = /*#__PURE__*/ createUseReadContract({
@@ -983,6 +989,7 @@ export const useReadPinVBasisPoints = /*#__PURE__*/ createUseReadContract({
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"balanceOf"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useReadPinVBalanceOf = /*#__PURE__*/ createUseReadContract({
@@ -995,6 +1002,7 @@ export const useReadPinVBalanceOf = /*#__PURE__*/ createUseReadContract({
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"balanceOfBatch"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useReadPinVBalanceOfBatch = /*#__PURE__*/ createUseReadContract({
@@ -1007,6 +1015,7 @@ export const useReadPinVBalanceOfBatch = /*#__PURE__*/ createUseReadContract({
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"config"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useReadPinVConfig = /*#__PURE__*/ createUseReadContract({
@@ -1019,6 +1028,7 @@ export const useReadPinVConfig = /*#__PURE__*/ createUseReadContract({
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"exists"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useReadPinVExists = /*#__PURE__*/ createUseReadContract({
@@ -1031,6 +1041,7 @@ export const useReadPinVExists = /*#__PURE__*/ createUseReadContract({
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"getConfig"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useReadPinVGetConfig = /*#__PURE__*/ createUseReadContract({
@@ -1043,6 +1054,7 @@ export const useReadPinVGetConfig = /*#__PURE__*/ createUseReadContract({
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"isApprovedForAll"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useReadPinVIsApprovedForAll = /*#__PURE__*/ createUseReadContract({
@@ -1055,6 +1067,7 @@ export const useReadPinVIsApprovedForAll = /*#__PURE__*/ createUseReadContract({
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"nextTokenId"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useReadPinVNextTokenId = /*#__PURE__*/ createUseReadContract({
@@ -1067,6 +1080,7 @@ export const useReadPinVNextTokenId = /*#__PURE__*/ createUseReadContract({
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"owner"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useReadPinVOwner = /*#__PURE__*/ createUseReadContract({
@@ -1079,6 +1093,7 @@ export const useReadPinVOwner = /*#__PURE__*/ createUseReadContract({
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"pinStoreImplementation"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useReadPinVPinStoreImplementation =
@@ -1092,6 +1107,7 @@ export const useReadPinVPinStoreImplementation =
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"pinStores"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useReadPinVPinStores = /*#__PURE__*/ createUseReadContract({
@@ -1104,6 +1120,7 @@ export const useReadPinVPinStores = /*#__PURE__*/ createUseReadContract({
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"supportsInterface"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useReadPinVSupportsInterface = /*#__PURE__*/ createUseReadContract(
@@ -1114,6 +1131,7 @@ export const useReadPinVSupportsInterface = /*#__PURE__*/ createUseReadContract(
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"totalSupply"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useReadPinVTotalSupply = /*#__PURE__*/ createUseReadContract({
@@ -1126,6 +1144,7 @@ export const useReadPinVTotalSupply = /*#__PURE__*/ createUseReadContract({
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"uri"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useReadPinVUri = /*#__PURE__*/ createUseReadContract({
@@ -1138,6 +1157,7 @@ export const useReadPinVUri = /*#__PURE__*/ createUseReadContract({
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link pinVAbi}__
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWritePinV = /*#__PURE__*/ createUseWriteContract({
@@ -1149,6 +1169,7 @@ export const useWritePinV = /*#__PURE__*/ createUseWriteContract({
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"mint"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWritePinVMint = /*#__PURE__*/ createUseWriteContract({
@@ -1161,6 +1182,7 @@ export const useWritePinVMint = /*#__PURE__*/ createUseWriteContract({
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"renounceOwnership"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWritePinVRenounceOwnership =
@@ -1174,6 +1196,7 @@ export const useWritePinVRenounceOwnership =
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"safeBatchTransferFrom"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWritePinVSafeBatchTransferFrom =
@@ -1187,6 +1210,7 @@ export const useWritePinVSafeBatchTransferFrom =
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"safeTransferFrom"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWritePinVSafeTransferFrom =
@@ -1200,6 +1224,7 @@ export const useWritePinVSafeTransferFrom =
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"secondaryMint"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWritePinVSecondaryMint = /*#__PURE__*/ createUseWriteContract({
@@ -1212,6 +1237,7 @@ export const useWritePinVSecondaryMint = /*#__PURE__*/ createUseWriteContract({
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"setApprovalForAll"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWritePinVSetApprovalForAll =
@@ -1225,6 +1251,7 @@ export const useWritePinVSetApprovalForAll =
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"setConfig"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWritePinVSetConfig = /*#__PURE__*/ createUseWriteContract({
@@ -1237,6 +1264,7 @@ export const useWritePinVSetConfig = /*#__PURE__*/ createUseWriteContract({
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"setPinStoreImplementation"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWritePinVSetPinStoreImplementation =
@@ -1250,6 +1278,7 @@ export const useWritePinVSetPinStoreImplementation =
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"transferOwnership"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWritePinVTransferOwnership =
@@ -1263,6 +1292,7 @@ export const useWritePinVTransferOwnership =
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"withdraw"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWritePinVWithdraw = /*#__PURE__*/ createUseWriteContract({
@@ -1275,6 +1305,7 @@ export const useWritePinVWithdraw = /*#__PURE__*/ createUseWriteContract({
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link pinVAbi}__
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useSimulatePinV = /*#__PURE__*/ createUseSimulateContract({
@@ -1286,6 +1317,7 @@ export const useSimulatePinV = /*#__PURE__*/ createUseSimulateContract({
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"mint"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useSimulatePinVMint = /*#__PURE__*/ createUseSimulateContract({
@@ -1298,6 +1330,7 @@ export const useSimulatePinVMint = /*#__PURE__*/ createUseSimulateContract({
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"renounceOwnership"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useSimulatePinVRenounceOwnership =
@@ -1311,6 +1344,7 @@ export const useSimulatePinVRenounceOwnership =
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"safeBatchTransferFrom"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useSimulatePinVSafeBatchTransferFrom =
@@ -1324,6 +1358,7 @@ export const useSimulatePinVSafeBatchTransferFrom =
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"safeTransferFrom"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useSimulatePinVSafeTransferFrom =
@@ -1337,6 +1372,7 @@ export const useSimulatePinVSafeTransferFrom =
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"secondaryMint"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useSimulatePinVSecondaryMint =
@@ -1350,6 +1386,7 @@ export const useSimulatePinVSecondaryMint =
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"setApprovalForAll"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useSimulatePinVSetApprovalForAll =
@@ -1363,6 +1400,7 @@ export const useSimulatePinVSetApprovalForAll =
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"setConfig"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useSimulatePinVSetConfig = /*#__PURE__*/ createUseSimulateContract(
@@ -1373,6 +1411,7 @@ export const useSimulatePinVSetConfig = /*#__PURE__*/ createUseSimulateContract(
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"setPinStoreImplementation"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useSimulatePinVSetPinStoreImplementation =
@@ -1386,6 +1425,7 @@ export const useSimulatePinVSetPinStoreImplementation =
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"transferOwnership"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useSimulatePinVTransferOwnership =
@@ -1399,6 +1439,7 @@ export const useSimulatePinVTransferOwnership =
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link pinVAbi}__ and `functionName` set to `"withdraw"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useSimulatePinVWithdraw = /*#__PURE__*/ createUseSimulateContract({
@@ -1411,6 +1452,7 @@ export const useSimulatePinVWithdraw = /*#__PURE__*/ createUseSimulateContract({
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link pinVAbi}__
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWatchPinVEvent = /*#__PURE__*/ createUseWatchContractEvent({
@@ -1422,6 +1464,7 @@ export const useWatchPinVEvent = /*#__PURE__*/ createUseWatchContractEvent({
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link pinVAbi}__ and `eventName` set to `"ApprovalForAll"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWatchPinVApprovalForAllEvent =
@@ -1435,6 +1478,7 @@ export const useWatchPinVApprovalForAllEvent =
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link pinVAbi}__ and `eventName` set to `"ConfigUpdated"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWatchPinVConfigUpdatedEvent =
@@ -1448,6 +1492,7 @@ export const useWatchPinVConfigUpdatedEvent =
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link pinVAbi}__ and `eventName` set to `"Mint"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWatchPinVMintEvent = /*#__PURE__*/ createUseWatchContractEvent({
@@ -1460,6 +1505,7 @@ export const useWatchPinVMintEvent = /*#__PURE__*/ createUseWatchContractEvent({
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link pinVAbi}__ and `eventName` set to `"OwnershipTransferred"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWatchPinVOwnershipTransferredEvent =
@@ -1473,6 +1519,7 @@ export const useWatchPinVOwnershipTransferredEvent =
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link pinVAbi}__ and `eventName` set to `"SecondaryMint"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWatchPinVSecondaryMintEvent =
@@ -1486,6 +1533,7 @@ export const useWatchPinVSecondaryMintEvent =
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link pinVAbi}__ and `eventName` set to `"TransferBatch"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWatchPinVTransferBatchEvent =
@@ -1499,6 +1547,7 @@ export const useWatchPinVTransferBatchEvent =
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link pinVAbi}__ and `eventName` set to `"TransferSingle"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWatchPinVTransferSingleEvent =
@@ -1512,6 +1561,7 @@ export const useWatchPinVTransferSingleEvent =
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link pinVAbi}__ and `eventName` set to `"URI"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWatchPinVUriEvent = /*#__PURE__*/ createUseWatchContractEvent({
@@ -1524,6 +1574,7 @@ export const useWatchPinVUriEvent = /*#__PURE__*/ createUseWatchContractEvent({
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link pinVAbi}__ and `eventName` set to `"Withdrawn"`
  *
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x0000000000000000000000000000000000000000)
+ * -
  * - [__View Contract on Base Sepolia Basescan__](https://sepolia.basescan.org/address/0xfb5118bcaec3b6d774307e777679c7bc16dce020)
  */
 export const useWatchPinVWithdrawnEvent =

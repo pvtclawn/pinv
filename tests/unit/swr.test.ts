@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { serveWithSWR } from '../../og/services/swr';
-import { FastifyReply } from 'fastify';
 
 const { mockRedis, mockMemoryCache } = vi.hoisted(() => {
     return {
@@ -8,7 +7,10 @@ const { mockRedis, mockMemoryCache } = vi.hoisted(() => {
             status: 'ready',
             getBuffer: vi.fn(),
             exists: vi.fn(),
-            set: vi.fn().mockResolvedValue('OK'),
+            set: vi.fn().mockImplementation((...args) => {
+                console.log('DEBUG: mockRedis.set called with:', args);
+                return Promise.resolve('OK');
+            }),
             setBuffer: vi.fn().mockResolvedValue('OK'),
             del: vi.fn().mockResolvedValue(1),
             on: vi.fn(),
@@ -119,7 +121,7 @@ describe('SWR Service', () => {
         expect(mockMemoryCache.set).toHaveBeenCalled();
 
         // Verify: Redis updates
-        expect(mockRedis.del).toHaveBeenCalled(); // Check if we got here
-        expect(mockRedis.setBuffer).toHaveBeenCalled();
+        expect(mockRedis.del).toHaveBeenCalled();
+        expect(mockRedis.set).toHaveBeenCalled();
     });
 });

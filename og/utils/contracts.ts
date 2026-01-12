@@ -56,6 +56,7 @@ export const pinVStoreAbi = [
 export const pinVAddress = {
     8453: (process.env.NEXT_PUBLIC_PINV_ADDRESS_BASE_MAINNET || '0x0000000000000000000000000000000000000000') as `0x${string}`,
     84532: (process.env.NEXT_PUBLIC_PINV_ADDRESS_BASE_SEPOLIA || '0xfB5118bcAec3b6D774307E777679C7Bc16dcE020') as `0x${string}`, // Base Sepolia
+    31337: (process.env.CONTRACT_ADDRESS || '0xe7f1725e7734ce288f8367e1bb143e90bb3f0512') as `0x${string}`,
 } as const;
 
 export const pinVConfig = { address: pinVAddress, abi: pinVAbi } as const;
