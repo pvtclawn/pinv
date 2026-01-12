@@ -1,4 +1,13 @@
-export const NEXT_PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pinv.app';
+// Fail fast helper to prevent silent config failures
+function requireEnv(value: string | undefined, key: string): string {
+    if (!value) {
+        throw new Error(`Missing required environment variable: ${key}`);
+    }
+    return value;
+}
+
+// Strictly require NEXT_PUBLIC_APP_URL to be set in .env or .env.local
+export const NEXT_PUBLIC_APP_URL = requireEnv(process.env.NEXT_PUBLIC_APP_URL, 'NEXT_PUBLIC_APP_URL');
 
 export const APP_CONFIG = {
     // Used in layout.tsx (metadata) and manifest (name, ogTitle)

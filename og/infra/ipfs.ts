@@ -42,6 +42,8 @@ export async function fetchIpfsJson(cid: string): Promise<any> {
                 return await res.json();
             } catch (e: any) {
                 clearTimeout(id);
+                console.warn(`[IPFS] Fetch Error (${gw}):`, e.message);
+                logToFile(`[IPFS] Fetch Error (${gw}): ${e.message}`);
                 throw e;
             }
         };

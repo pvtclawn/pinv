@@ -4,7 +4,7 @@ import { pinVAddress } from './contracts';
 
 // Load env from root
 dotenv.config({ path: path.join(__dirname, '../../.env') });
-dotenv.config({ path: path.join(__dirname, '../../.env.local'), override: true });
+dotenv.config({ path: path.join(__dirname, '../../.env.local') });
 
 export const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 export const REDIS_CONNECT_TIMEOUT = 2000;

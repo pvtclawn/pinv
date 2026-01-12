@@ -6,7 +6,11 @@ import { BunWorkerPool } from './pool';
 // Native Bun Worker Pool
 // Limit maxWorkers to avoid OOM on small instances (Fly.io).
 const MAX_WORKERS = parseInt(process.env.OG_MAX_THREADS || '2');
-const workerPath = path.join(__dirname, '../worker.js');
+
+// Resolve worker path (prefer .ts for Bun Dev, .js for Prod)
+const workerTs = path.join(__dirname, '../worker.ts');
+const workerJs = path.join(__dirname, '../worker.js');
+const workerPath = fs.existsSync(workerTs) ? workerTs : workerJs;
 
 // Ensure worker exists
 if (!fs.existsSync(workerPath)) {
