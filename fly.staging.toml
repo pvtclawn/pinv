@@ -9,6 +9,7 @@ primary_region = 'iad'
 [env]
   NODE_ENV = 'production' # Keep as production to mirror behavior
   PORT = '8080'
+  OG_MAX_THREADS = '1'
 
 [[services]]
   protocol = 'tcp'
