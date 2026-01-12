@@ -69,6 +69,7 @@ export function constructMetadata({
         other: {
             'fc:miniapp': JSON.stringify(fcMetadata),
             'fc:frame': JSON.stringify(fcFrameMetadata),
+            'base:app_id': APP_CONFIG.baseAppId,
         },
     };
 }
