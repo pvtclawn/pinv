@@ -138,6 +138,7 @@ test.describe.serial('Real World Scenario (NY Counter)', () => {
         expect(response.headers()['content-type']).toBe('image/png');
 
         const buffer = await response.body();
+
         const { text, seconds } = await scanImage(buffer);
 
         expect(text).toContain('NY COUNTDOWN');
@@ -242,7 +243,7 @@ test.describe.serial('Real World Scenario (NY Counter)', () => {
         // So checking without nonce is a BETTER test of the architecture.
 
         console.log(`[RealTest] Fetching /og/${pinId} (Expect New Version)...`);
-        await new Promise(r => setTimeout(r, 2000)); // Propagate
+        await new Promise(r => setTimeout(r, 6000)); // Propagate (Wait for 5s pinCache TTL)
 
         const response = await request.get(`/og/${pinId}`);
         expect(response.status()).toBe(200);

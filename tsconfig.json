@@ -39,6 +39,7 @@
     "node_modules",
     "og",
     "local",
-    "lit"
+    "lit",
+    "tests"
   ]
 }

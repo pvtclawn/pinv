@@ -96,7 +96,12 @@ export class BunWorkerPool extends EventEmitter {
         if (msg.error) {
             task.reject(new Error(msg.error));
         } else {
-            task.resolve(msg.result);
+            // Re-hydrate Buffer (Bun postMessage transfers as Uint8Array)
+            const result = (msg.result instanceof Uint8Array)
+                ? Buffer.from(msg.result)
+                : msg.result;
+
+            task.resolve(result);
         }
 
         this.processNextTask();
