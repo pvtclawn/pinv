@@ -9,7 +9,6 @@ import { NEXT_PUBLIC_APP_URL } from "@/lib/config";
  * Build an OG image URL for a pin with given parameters.
  */
 import { Pin } from "@/types";
-import { encodeBundle } from "@/lib/bundle-utils";
 
 /**
  * Build an OG image URL for a pin with given parameters.
@@ -17,7 +16,9 @@ import { encodeBundle } from "@/lib/bundle-utils";
 export function buildOgUrl(pinId: number | string, params: Record<string, string> = {}, bustCache = true, pin?: Pin): string {
     // 1. SAME DOMAIN ACCESS
     // Use the main application URL. Next.js Rewrites (or Prod Ingress) will route /og/* to the Engine.
-    const appUrl = NEXT_PUBLIC_APP_URL;
+    // FIX: On client (Vercel Preview/Dev), use window.location.origin to ensure we hit the current domain/rewrite
+    // and not the hardcoded Production URL from env vars.
+    const appUrl = (typeof window !== 'undefined') ? window.location.origin : (NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
     const url = new URL(`${appUrl}/og/${pinId}`);
 
     // OPTIMIZATION: Use signed bundle if available (Client-Side Generation)
@@ -59,7 +60,7 @@ export function buildOgUrl(pinId: number | string, params: Record<string, string
  * Build a shareable URL for a pin with given parameters.
  */
 export function buildShareUrl(pinId: number | string, params: Record<string, string> = {}): string {
-    const appUrl = NEXT_PUBLIC_APP_URL;
+    const appUrl = (typeof window !== 'undefined') ? window.location.origin : (NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
     const url = new URL(`${appUrl}/p/${pinId}`);
 
     Object.entries(params).forEach(([key, value]) => {
@@ -73,12 +74,14 @@ export function buildShareUrl(pinId: number | string, params: Record<string, str
  * Build a pin page URL.
  */
 export function buildPinUrl(pinId: number | string): string {
-    return `${NEXT_PUBLIC_APP_URL}/p/${pinId}`;
+    const appUrl = (typeof window !== 'undefined') ? window.location.origin : (NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
+    return `${appUrl}/p/${pinId}`;
 }
 
 /**
  * Build a pin edit URL.
  */
 export function buildEditUrl(pinId: number | string): string {
-    return `${NEXT_PUBLIC_APP_URL}/p/${pinId}/edit`;
+    const appUrl = (typeof window !== 'undefined') ? window.location.origin : (NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
+    return `${appUrl}/p/${pinId}/edit`;
 }
