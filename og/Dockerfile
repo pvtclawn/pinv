@@ -6,7 +6,7 @@ WORKDIR /app
 # Copy root config files
 COPY package.json bun.lock tsconfig.json ./
 # Install root dependencies (for shared lib/hooks)
-RUN bun install
+RUN bun install --ignore-scripts
 
 # Copy shared code directories
 COPY lib ./lib
