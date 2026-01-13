@@ -33,7 +33,7 @@ export function EditorPreview({
                 description={null}
                 imageSrc={previewImageUrl}
                 isLoading={isLoading}
-                placeholderText="Initialize module to visualise data."
+
                 className="h-fit border-none shadow-none bg-transparent"
             >
                 <div className={cn(

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 // @ts-ignore
-import { loadGraphemeImages, loadDynamicFonts } from '../../../og/services/assets';
+import { loadGraphemeImages, loadDynamicFonts } from '../../../services/assets';
 
 // Mock fetch
 const fetchMock = vi.fn();

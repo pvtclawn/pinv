@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeProps } from '../../../og/utils/normalization';
-import { resolveImageUrl } from '../../../og/utils/url';
+import { normalizeProps } from '../../../utils/normalization';
+import { resolveImageUrl } from '../../../utils/url';
 
 describe('OG Normalization Logic', () => {
     const BASE_URL = 'http://localhost:3000';

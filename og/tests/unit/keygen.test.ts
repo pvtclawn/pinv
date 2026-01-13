@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { generateCacheKey } from '../../og/utils/keygen';
-import { OgContext } from '../../og/services/auth';
+import { generateCacheKey } from '../../utils/keygen';
+import { OgContext } from '../../services/auth';
 
 describe('Key Generation Utils', () => {
     const mockCtx: OgContext = {

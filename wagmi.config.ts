@@ -33,7 +33,6 @@ export default defineConfig([
         out: 'web/hooks/contracts.ts',
         plugins: [
             react(),
-            foundryPlugin
         ],
     }
 ])

@@ -6,7 +6,11 @@
         "dev": "next dev",
         "build": "next build",
         "start": "next start",
-        "lint": "eslint"
+        "lint": "eslint",
+        "test": "vitest run tests/integration",
+        "test:all": "vitest run",
+        "test:watch": "vitest tests/integration",
+        "test:e2e": "./tests/e2e/run_full_stack.sh"
     },
     "dependencies": {
         "@coinbase/onchainkit": "^1.1.2",

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { serveWithSWR } from '../../og/services/swr';
+import { serveWithSWR } from '../../services/swr';
 
 const { mockRedis, mockMemoryCache } = vi.hoisted(() => {
     return {
@@ -22,12 +22,12 @@ const { mockRedis, mockMemoryCache } = vi.hoisted(() => {
     }
 });
 
-vi.mock('../../og/infra/cache', () => ({
+vi.mock('../../infra/cache', () => ({
     redis: mockRedis,
     memoryCache: mockMemoryCache,
 }));
 
-vi.mock('../../og/utils/logger', () => ({
+vi.mock('../../utils/logger', () => ({
     logToFile: vi.fn(),
 }));
 

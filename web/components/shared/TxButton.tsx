@@ -14,7 +14,7 @@ import {
     shouldDisableTransaction,
     getTransactionButtonText,
     createTransactionExecutor
-} from '@/lib/services/transactionService';
+} from '@/services/transactionService';
 
 
 interface TxButtonProps {

@@ -50,12 +50,30 @@ export const notify = (
     type: 'success' | 'error' | 'warning' | 'info' | 'loading',
     options?: any
 ) => {
-    toast[type](message, {
+    const toastOptions = {
         className: "group border border-border bg-background text-foreground font-mono text-xs uppercase tracking-wider shadow-lg",
         descriptionClassName: "text-muted-foreground",
         duration: 5000,
         ...options,
-    })
+    };
+
+    switch (type) {
+        case 'success':
+            toast.success(message as any, toastOptions);
+            break;
+        case 'error':
+            toast.error(message as any, toastOptions);
+            break;
+        case 'warning':
+            toast.warning(message as any, toastOptions);
+            break;
+        case 'info':
+            toast.info(message as any, toastOptions);
+            break;
+        case 'loading':
+            toast.loading(message as any, toastOptions);
+            break;
+    }
 }
 
 export const hide = (id: string | number) => {

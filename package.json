@@ -3,14 +3,19 @@
   "private": true,
   "scripts": {
     "generate": "wagmi generate",
+    "dev:web": "bun run --filter pinv-web dev",
+    "dev:og": "bun run --filter pinv-og dev",
+    "test:web": "bun run --filter pinv-web test",
+    "test:og": "bun run --filter pinv-og test",
+    "test:all": "bun run --filter '*' test",
+    "build:all": "bun run --filter '*' build",
     "deploy": "cd contracts && ./deploy.sh",
     "deploy:base-sepolia": "cd contracts && ./deploy.sh sepolia",
     "deploy:base-mainnet": "cd contracts && ./deploy.sh mainnet"
   },
   "workspaces": [
     "web",
-    "og",
-    "contracts"
+    "og"
   ],
   "dependencies": {
     "viem": "^2.40.3",
@@ -20,5 +25,9 @@
   "devDependencies": {
     "@wagmi/cli": "^2.8.0",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19"
   }
 }

@@ -58,7 +58,7 @@ export default function WalletProvider({ children }: { children: ReactNode }) {
         <WagmiProvider config={config}>
             <QueryClientProvider client={queryClient}>
                 <OnchainKitProvider apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY} chain={chain}>
-                    {children}
+                    <>{children}</>
                 </OnchainKitProvider>
             </QueryClientProvider>
         </WagmiProvider>

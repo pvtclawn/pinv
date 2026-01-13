@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { memoryCache } from '../../og/infra/cache';
-import { MEMORY_CACHE_MAX_ITEMS } from '../../og/utils/constants';
+import { memoryCache } from '../../infra/cache';
+import { MEMORY_CACHE_MAX_ITEMS } from '../../utils/constants';
 
 describe('Safe Memory Cache (LRU)', () => {
     beforeEach(() => {

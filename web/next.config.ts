@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const cspConfig = {
   "default-src": ["'self'"],
@@ -54,8 +55,10 @@ const cspHeader = Object.entries(cspConfig)
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["pino", "thread-stream"],
+  // Note: 'turbopack' key is stable in Next.js 15+, checking documentation validity.
+  // The error message explicitely mentioned setting turbopack.root.
   turbopack: {
-    root: __dirname,
+    root: path.join(__dirname, '..'),
   },
   allowedDevOrigins: ["welcome-primate-specially.ngrok-free.app", "pinv.app", "localhost:3000"],
   async headers() {

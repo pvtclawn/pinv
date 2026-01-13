@@ -12,7 +12,7 @@ export default function Providers({ children }: { children: ReactNode; }) {
         <WalletProvider>
             <MiniappProvider>
                 <ThemeProvider>
-                    {children}
+                    <>{children}</>
                 </ThemeProvider>
             </MiniappProvider>
         </WalletProvider>

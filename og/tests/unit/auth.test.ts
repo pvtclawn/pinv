@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { resolveContext } from '../../og/services/auth';
-import * as SigUtils from '../../og/utils/sig';
-import * as BundleUtils from '../../og/utils/bundle';
-import * as PinInfra from '../../og/infra/pin';
+import { resolveContext } from '../../services/auth';
+import * as SigUtils from '../../utils/sig';
+import * as BundleUtils from '../../utils/bundle';
+import * as PinInfra from '../../infra/pin';
 
 describe('Auth Service', () => {
     beforeEach(() => {

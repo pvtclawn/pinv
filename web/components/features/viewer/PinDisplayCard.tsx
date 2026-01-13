@@ -10,9 +10,6 @@ interface PinDisplayCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>,
     imageSrc?: string | null;
     isLoading?: boolean;
     children?: React.ReactNode;
-    // Optional placeholder icon/text overrides
-    placeholderIcon?: React.ElementType;
-    placeholderText?: string;
     footerClassName?: string;
 }
 
@@ -23,8 +20,6 @@ export default function PinDisplayCard({
     isLoading = false,
     children,
     className,
-    placeholderIcon: PlaceholderIcon = ScanFace,
-    placeholderText = "No preview available",
     footerClassName,
     ...props
 }: PinDisplayCardProps) {

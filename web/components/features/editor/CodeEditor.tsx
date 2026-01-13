@@ -119,18 +119,6 @@ export default function CodeEditor({
                     />
                 </div>
             </div>
-
-            {/* Global style override, scoped to this editor wrapper to prevent side effects */}
-            <style jsx global>{`
-                .code-editor-wrapper .prism-editor-textarea {
-                     white-space: pre !important; 
-                     overflow-wrap: normal !important;
-                }
-                .code-editor-wrapper pre {
-                     white-space: pre !important; 
-                     overflow-wrap: normal !important;
-                }
-            `}</style>
         </div>
     );
 

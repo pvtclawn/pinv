@@ -1,12 +1,13 @@
 {
-    "name": "og-engine",
+    "name": "pinv-og",
     "version": "1.0.0",
     "description": "Secure OG rendering service",
     "main": "dist/api/server.js",
     "scripts": {
         "dev": "bun --watch api/server.ts",
         "build": "tsc",
-        "start": "bun dist/api/server.js"
+        "start": "bun dist/api/server.js",
+        "test": "vitest run tests/unit"
     },
     "dependencies": {
         "@fastify/cors": "^11.2.0",
@@ -31,6 +32,7 @@
         "@types/node": "^20.11.24",
         "@types/react": "^18.2.61",
         "tsx": "^4.7.1",
-        "typescript": "^5.3.3"
+        "typescript": "^5.3.3",
+        "vitest": "^4.0.17"
     }
 }

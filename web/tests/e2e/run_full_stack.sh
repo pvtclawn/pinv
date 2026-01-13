@@ -7,7 +7,7 @@ IPFS_PORT=8081
 API_PORT=3001
 ANVIL_URL="http://127.0.0.1:$ANVIL_PORT"
 ANVIL_PK="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-PROJECT_ROOT=$(cd "$(dirname "$0")/../../" && pwd)
+PROJECT_ROOT=$(cd "$(dirname "$0")/../../../" && pwd)
 
 # PIDs for cleanup
 PIDS=()
@@ -50,9 +50,9 @@ echo "      -> Deployed PinV to: $PINV_ADDRESS"
 
 # 3. Start Mock IPFS
 echo "[3/5] Starting Mock IPFS (Data)..."
-cd "$PROJECT_ROOT/tests/integration/mock_ipfs"
+cd "$PROJECT_ROOT/web/tests/integration/mock_ipfs"
 # python3 -m http.server $IPFS_PORT > /dev/null 2>&1 &
-PORT=$IPFS_PORT bun serve_mock.ts > ../../../mock_ipfs.log 2>&1 &
+PORT=$IPFS_PORT bun serve_mock.ts > ../../../../mock_ipfs.log 2>&1 &
 PIDS+=($!)
 
 echo "      -> Waiting for Mock IPFS..."
@@ -93,7 +93,7 @@ cd "$PROJECT_ROOT"
 export BASE_URL="http://localhost:$API_PORT"
 export LOCAL_CONTRACT_ADDRESS=$PINV_ADDRESS
 
-bun x playwright test tests/e2e
+bun x playwright test web/tests/e2e
 
 echo "[+] Running Integration Tests (Vitest)..."
-bun test tests/integration/local_flow.test.ts
+bun test web/tests/integration/local_flow.test.ts

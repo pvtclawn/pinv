@@ -293,3 +293,13 @@ code,
     @apply bg-background text-foreground;
   }
 }
+
+/* Editor Overrides */
+.code-editor-wrapper .prism-editor-textarea {
+  white-space: pre !important;
+  overflow-wrap: normal !important;
+}
+.code-editor-wrapper pre {
+  white-space: pre !important; 
+  overflow-wrap: normal !important;
+}
