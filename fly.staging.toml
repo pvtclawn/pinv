@@ -4,6 +4,7 @@ primary_region = 'iad'
 
 [build]
   ignorefile = '.dockerignore'
+  dockerfile = 'og/Dockerfile'
 
 [env]
   NODE_ENV = 'production' # Keep as production to mirror behavior
