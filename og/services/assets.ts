@@ -12,7 +12,9 @@ import emojiRegex from 'emoji-regex';
 // --- Font Cache ---
 const possiblePaths = [
     path.join(__dirname, '../../public/fonts'), // Local Dev (relative to og/services)
-    path.join(__dirname, '../public/fonts'),    // Dist (relative to dist/services)
+    path.join(__dirname, '../public/fonts'),    // Dist (relative to dist/api/services)
+    path.join(__dirname, 'public/fonts'),       // Dist Worker (relative to dist/worker.js)
+    path.join(process.cwd(), 'dist/public/fonts'), // Explicit absolute fallback
     path.join(process.cwd(), 'og/public/fonts'),
     path.join(process.cwd(), 'public/fonts'),
 ];
