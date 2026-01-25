@@ -22,7 +22,10 @@ export function Connection() {
     if (!loggedIn) {
         return (
             <Button
-                onClick={() => connect({ connector: connectors[0] })}
+                onClick={() => {
+                    const connector = connectors.find(c => c.id === 'injected' || c.name === 'Injected') || connectors[0];
+                    if (connector) connect({ connector });
+                }}
                 className="bg-primary hover:bg-primary/90 text-white font-bold font-sans uppercase tracking-wider rounded-none px-6 h-9 shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
             >
                 Connect Wallet

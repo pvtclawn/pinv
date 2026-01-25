@@ -20,6 +20,7 @@ const cspConfig = {
   "font-src": ["'self'", "data:"],
   "connect-src": [
     "'self'",
+    "https:",
     "https://explorer-api.walletconnect.com",
     "https://farcaster.xyz",
     "https://client.farcaster.xyz",
@@ -40,6 +41,9 @@ const cspConfig = {
     "https://*.pinata.cloud",
     "http://localhost:8080",
     "http://127.0.0.1:8080",
+    "http://localhost:3333",
+    "http://localhost:4444",
+    "http://localhost:5555",
     "https://pinv-og.fly.dev",
     "https://pinv-og-staging.fly.dev",
     "https://ipfs.io",

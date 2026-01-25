@@ -1,46 +1,66 @@
-# OG Engine Service
+# PinV OG Engine
 
-A dedicated, sandboxed service for rendering PinV widget thumbnails.
+> High-performance Open Graph image generation service for PinV Frames.
 
-## Features
-- **Security**: Runs untrusted widget code in a sandboxed child process (no network, restricted globals).
-- **Performance**: Two-tier caching (L1 Memory, L2 Redis) + Request Locking.
-- **Access Control**: EIP-712 Signature Verification for customized OGs.
+## Overview
+
+**PinV OG** is the rendering powerhouse of the network. It is responsible for:
+1.  **Executing** the dynamic logic of a Pin (via `pinv-box` or local sandbox).
+2.  **Rendering** the resulting UI (React components) into static images (PNG).
+3.  **Caching** results to ensure fast Frame responses (sub-2s required by Farcaster).
+
+It uses **Fastify** for high throughput, **Satori** for converting React/HTML to SVG, and **Resvg** for high-quality rasterization.
+
+## Architecture
+
+-   **Server**: Fastify (Node.js)
+-   **Rendering**: Satori (HTML → SVG) + Resvg (SVG → PNG)
+-   **Caching**: Redis (Optional/Configurable)
+
+## API Reference
+
+### 1. Render Pin Image
+Returns a generated PNG image for a specific Pin.
+
+-   **GET** `/og/:pinId`
+-   **Query Parms**:
+    -   `t`: Timestamp (cache busting)
+    -   `params`: encoded parameters for the widget
+    -   `ver`: version hash
+-   **Response**: `image/png`
+
+### 2. Preview (Development)
+Used by the frontend editor to preview widgets in real-time.
+
+-   **POST** `/og/preview`
+-   **Body**:
+    ```json
+    {
+      "code": "...", // The widget logic
+      "params": { ... }
+    }
+    ```
+-   **Response**: `image/png`
+
+### 3. Health Check
+-   **GET** `/healthz`
 
 ## Development
 
-1. **Install Dependencies**
-   ```bash
-   cd og
-   npm install
-   ```
+### Prerequisites
+-   Bun
+-   Access to IPFS Gateway (configured in `.env`)
 
-2. **Run Locally**
-   ```bash
-   # Requires root .env for RPC configuration
-   npm run dev
-   ```
-   Server runs on `http://localhost:8080`.
-
-3. **Verify**
-   ```bash
-   # Check health
-   curl http://localhost:8080/health
-
-   # Render specific pin
-   curl -v "http://localhost:8080/og/123" > output.png
-   ```
-
-## Deployment
-
-The service is configured for Fly.io.
+### Run Locally
 
 ```bash
-fly launch # first time
-fly deploy
+bun run dev
+# Listens on port 3001 (default)
 ```
 
-## Structure
-- `server.ts`: Main Fastify server, handles caching and auth.
-- `worker.js`: Rendering worker, reads JSON from stdin, writes PNG to stdout.
-- `lib/security.ts`: Signature verification logic.
+### Environment Variables
+
+Inherits from root `.env`:
+-   `NEXT_PUBLIC_IPFS_GATEWAY`: For fetching image assets.
+-   `KV_REST_API_URL`: For caching (Vercel KV / Redis).
+-   `INTERNAL_AUTH_KEY`: Integration with Box.

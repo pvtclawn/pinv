@@ -79,7 +79,7 @@ server.get<{
 }>('/og/:pinId', getPinHandler);
 
 // Health
-server.get('/health', async () => ({ status: 'ok' }));
+server.get('/healthz', async () => ({ status: 'ok' }));
 
 console.log(`[OG Engine] Starting on Port: ${PORT}`);
 console.log(`[OG Engine] Chain ID: ${CHAIN_ID}`);

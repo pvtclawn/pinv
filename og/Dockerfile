@@ -31,6 +31,7 @@ WORKDIR /app
 
 # Copy built artifacts and necessary files
 COPY --from=builder /app/og/dist ./dist
+COPY --from=builder /app/og/dist/worker.js ./worker.js
 COPY --from=builder /app/og/package.json ./package.json
 COPY --from=builder /app/og/node_modules ./node_modules
 COPY --from=builder /app/public/fonts ./dist/public/fonts
@@ -39,4 +40,4 @@ COPY --from=builder /app/public/hero.png ./public/hero.png
 # Expose port
 EXPOSE 8080
 
-CMD ["bun", "dist/og/api/server.js"]
+CMD ["bun", "dist/api/server.js"]

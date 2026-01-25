@@ -1,22 +1,40 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { executeLitAction } from '../infra/executor';
+import { executeBoxAction } from '../infra/box';
 import { renderImageInWorker } from '../infra/renderer';
 import { generateOgImage } from '../services/generator';
 import { resolveContext } from '../services/auth';
 import { generateCacheKey } from '../utils/keygen';
 import { serveWithSWR } from '../services/swr';
 import { logToFile } from '../utils/logger';
+
 import { OG_WIDTH, OG_HEIGHT } from '../utils/constants';
 
+console.log('[DEBUG] Preview Request Recv');
 export async function previewHandler(req: FastifyRequest, reply: FastifyReply) {
     try {
-        const { dataCode, uiCode, params } = req.body as { dataCode?: string, uiCode?: string, params?: any };
+        const { dataCode, uiCode, params, encryptedCode, encryptedParams, publicParams } = req.body as {
+            dataCode?: string,
+            uiCode?: string,
+            params?: any,
+            encryptedCode?: string,
+            encryptedParams?: string,
+            publicParams?: any
+        };
 
         let result = {};
         let logs: string[] = [];
 
-        if (dataCode) {
-            const execRes = await executeLitAction(dataCode, params || {});
+        // Box Execution Logic
+        // We support both:
+        // 1. Direct Script (dataCode -> script) for Dev/Simple
+        // 2. Encrypted Code (encryptedCode -> encryptedCode) for Secure
+        if (dataCode || encryptedCode) {
+            const execRes = await executeBoxAction({
+                code: dataCode,
+                encryptedCode,
+                encryptedParams,
+                publicParams: publicParams || params || {}
+            });
             result = execRes.result || {};
             logs = execRes.logs || [];
         } else {
@@ -66,21 +84,13 @@ export async function getPinHandler(request: FastifyRequest<{
     };
 
     // 4. Serve
-    // 4. Serve
-    try {
-        return await serveWithSWR({
-            pinId,
-            cacheKey,
-            lockKey,
-            generatorFn,
-            reply,
-            forceRefresh: !!request.query.t,
-            isBundle: !!ctx.authorizedBundle
-        });
-    } catch (e: any) {
-        if (e.message === 'NO_UI_CODE') {
-            return reply.code(404).send('Pin content not found (IPFS missing).');
-        }
-        throw e;
-    }
+    return await serveWithSWR({
+        pinId,
+        cacheKey,
+        lockKey,
+        generatorFn,
+        reply,
+        forceRefresh: !!request.query.t,
+        isBundle: !!ctx.authorizedBundle
+    });
 }
