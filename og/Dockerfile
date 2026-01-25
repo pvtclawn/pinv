@@ -40,4 +40,4 @@ COPY --from=builder /app/public/hero.png ./public/hero.png
 # Expose port
 EXPOSE 8080
 
-CMD ["bun", "dist/server.js"]
+CMD ["bun", "dist/api/server.js"]
