@@ -85,7 +85,7 @@ PIDS+=($!)
 # Wait for Engine Health
 echo "      -> Waiting for Engine to be ready..."
 sleep 5
-# Optional: could curl /health here
+# Optional: could curl /healthz here
 
 # 5. Run Playwright
 echo "[5/5] Running E2E Tests..."

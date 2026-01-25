@@ -1,6 +1,6 @@
 {
   "name": "pinv-box",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "type": "module",
   "scripts": {
     "dev": "node --no-node-snapshot --import tsx src/index.ts",
@@ -12,7 +12,8 @@
     "docker:tag": "docker tag pinv-box:latest guydoordie/pinv-box:latest && docker tag pinv-box:latest guydoordie/pinv-box:$npm_package_version",
     "docker:push": "docker push guydoordie/pinv-box:latest && docker push guydoordie/pinv-box:$npm_package_version",
     "build": "bun build src/index.ts --compile --outfile dist/server",
-    "test": "bun test"
+    "test": "bun test",
+    "verify": "BOX_URL=http://localhost:5555 bun scripts/verify.ts"
   },
   "dependencies": {
     "@phala/dstack-sdk": "^0.5.7",

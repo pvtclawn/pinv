@@ -1,7 +1,7 @@
 import { decryptRaw } from "./keys.js";
 
-import type { EncryptedEnvelope } from "../../lib/crypto.js";
-import { decryptData, importSessionKey } from "../../lib/crypto.js";
+import type { EncryptedEnvelope } from "../../lib/crypto";
+import { decryptData, importSessionKey } from "../../lib/crypto";
 
 /**
  * Attempt to unwrap and decrypt an envelope.

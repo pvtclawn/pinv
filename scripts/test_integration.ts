@@ -6,10 +6,10 @@ async function main() {
 
     // 1. Health Check
     try {
-        const h = await fetch(`${OG_URL}/health`);
+        const h = await fetch(`${OG_URL}/healthz`);
         const hJson = await h.json();
         console.log("✅ [OG Health]", h.status, hJson);
-    } catch (e) {
+    } catch (e: any) {
         console.error("❌ [OG Health] Failed:", e.message);
         process.exit(1);
     }

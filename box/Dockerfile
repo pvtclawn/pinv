@@ -1,16 +1,17 @@
 # ==========================================
 # 1. Base Stage
 # ==========================================
-FROM node:20-bookworm AS base
+FROM node:24-bookworm AS base
 WORKDIR /app
+
 # Install build dependencies (python3, make, g++) for isolated-vm
-RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y python3 python-is-python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 # ==========================================
 # 2. Dependency Installation
 # ==========================================
 FROM base AS install
-# Prod Dependencies Only
+
 RUN mkdir -p /temp/prod
 COPY box/package.json /temp/prod/
 RUN cd /temp/prod && npm install --omit=dev
@@ -28,6 +29,7 @@ FROM base AS prerelease
 COPY box/src box/src
 COPY box/package.json box/
 COPY box/tsconfig.json box/
+
 # Copy Shared Library (Root Level)
 COPY lib lib
 
@@ -43,8 +45,8 @@ COPY --from=install /temp/prod/node_modules node_modules
 
 # Copy Source Code
 COPY --from=prerelease /app/box/src box/src
-COPY --from=prerelease /app/lib lib
 COPY --from=prerelease /app/box/package.json box/
+COPY --from=prerelease /app/lib lib
 
 # WORKDIR stays at /app (Root)
 WORKDIR /app
@@ -55,5 +57,5 @@ USER appuser
 
 EXPOSE 5555
 
-# Entrypoint: Run from root. tsx in node_modules/tsx will be found.
+# Entrypoint: Run from root
 ENTRYPOINT [ "node", "--no-node-snapshot", "--import", "tsx", "box/src/index.ts" ]
