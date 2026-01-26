@@ -1,7 +1,7 @@
 # ==========================================
 # 1. Base Stage
 # ==========================================
-FROM node:24.13.0-trixie-slim AS base
+FROM node:24.13.0-alpine3.23 AS base
 WORKDIR /app
 
 # Install build dependencies (python3, make, g++) for isolated-vm
