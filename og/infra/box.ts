@@ -67,15 +67,17 @@ export async function executeBoxAction(
         }
 
         const data = await response.json();
+        console.log('[BoxExecutor] Raw Data:', JSON.stringify(data));
 
         // 4. Parse Result
         // Box returns { status: "executed", result: ... }
         // We expect result to be the return value of the script.
         const result = data.result;
 
-        // Box currently doesn't capture console.log (it prints to stdout).
-        // Future optimization: Box should capture logs and return them.
-        const logs: string[] = ["[Box] Execution Successful"];
+        const logs: string[] = Array.isArray(data.logs) ? data.logs : ["[Box] Execution Successful (No logs returned)"];
+
+        console.log('[BoxExecutor] Logs received:', logs.length);
+        console.log('[BoxExecutor] First log:', logs[0]);
 
         console.log('[BoxExecutor] Result:', result);
 
