@@ -64,10 +64,11 @@ async function main() {
 
         // 4. Bump Version
         console.log("\n✅ Verification Passed. Bumping Version...");
-        // npm version returns the new version string (e.g., "v0.0.12")
-        // We let npm handle the git commit/tag
-        const newVersionTag = await runCapture("npm", ["version", "patch"]);
-        const newVersion = newVersionTag.replace("v", "");
+        await run("npm", ["version", "patch"]);
+
+        // Reload package.json to get the new version reliably
+        const pkgUpdated = JSON.parse(readFileSync("package.json", "utf-8"));
+        const newVersion = pkgUpdated.version;
         console.log(`   New Version: ${newVersion}`);
 
         // 5. Retag Image
