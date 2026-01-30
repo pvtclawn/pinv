@@ -1,6 +1,6 @@
 # PinVᵅ [WIP]
 
-**PinV** turns dynamic, AI-generated widgets into tradable, ownable assets (ERC1155 tokens). It allows users to "pin" live applications—showing real-time data like data lenses, markets, scores, news, or social feeds—directly to their profiles.
+**PinV** turns dynamic, AI-generated widgets into tradable, ownable assets (ERC1155 tokens). It allows users to "pin" live applications—showing real-time data like data lenses, markets, scores, news, or social feeds—directly to their profiles on [Farcaster](https://farcaster.xyz) or [Base App](https://join.base.app).
 
 ## 🌟 Vision & Mechanics
 
