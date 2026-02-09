@@ -57,7 +57,7 @@ function parseTargets(): TargetConfig[] {
       name: 'web',
       type: 'web',
       url: webUrl,
-      healthPath: '/api/health',
+      healthPath: '/', // Next.js has no dedicated health endpoint; check homepage
     });
   }
 
