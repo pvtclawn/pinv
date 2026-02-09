@@ -55,3 +55,31 @@ Anyone can send ETH to a store. Not a bug per se, but worth noting — creator f
 ---
 
 *Initial review — will continue with web/ components and tests in next pass.*
+
+## Web Service (web/)
+
+### Architecture
+Next.js App Router with RSC. Routes: homepage, pin viewer (`/p/[id]`), pin editor (`/p/[id]/edit`), API routes for generation/pins/proxy/webhook. Farcaster MiniApp manifest at `.well-known/farcaster.json`.
+
+### Findings
+
+**[GOOD] useWidgetGeneration.ts — Clean hook pattern**
+Well-structured React hook with proper error handling, loading state, and reset. Good TypeScript types.
+
+**[RISK] api/generate/route.ts — No rate limiting**
+Anyone can POST to `/api/generate` and trigger OpenRouter API calls (costs money). No auth, no rate limit, no CAPTCHA. Could be abused.
+
+**[RISK] api/generate/route.ts — Prompt injection surface**
+User prompt is concatenated directly into the LLM call. The system prompt is extensive but a determined attacker could craft prompts to extract API keys or generate malicious widget code.
+
+**[NOTE] api/generate/route.ts — Verbose debug logging in production**
+Lines 75-79: Full system prompt + user content logged on every request. Should be gated behind NODE_ENV=development.
+
+**[GOOD] lib/prompts.ts — Comprehensive generation prompt**
+280+ lines of detailed instructions for widget generation. Well-structured with virality principles, code constraints, and preview data requirements.
+
+**[NOTE] 4121 LOC in components**
+Large component surface. PinEditor is the most complex feature with code editor, preview, config, logs, and save/mint flow.
+
+**[TECH-DEBT] No API authentication layer**
+All API routes are public. Fine for read-only pin fetching, but generation and proxy routes should have some form of auth (session, API key, or wallet signature).
