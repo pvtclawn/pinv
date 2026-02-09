@@ -57,7 +57,13 @@ global.fetch = async (url, options) => {
         status: res.status,
         statusText: res.statusText,
         text: async () => res.text,
-        json: async () => JSON.parse(res.text)
+        json: async () => {
+            try {
+                return JSON.parse(res.text);
+            } catch (e) {
+                throw new Error("API_INVALID_JSON: Response is not valid JSON. Status: " + res.status + " " + res.statusText + ". Body: " + (res.text || "").slice(0, 100));
+            }
+        }
     };
 };
 `;
