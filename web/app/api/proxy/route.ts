@@ -1,10 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const ALLOWED_DOMAINS = [
+    'api.coingecko.com',
+    'api.coincap.io',
+    'enstate.rs',
+    'mainnet.base.org',
+    'base-sepolia.g.alchemy.com',
+    'eth-mainnet.g.alchemy.com',
+];
+
+function isUrlAllowed(urlStr: string): boolean {
+    try {
+        const url = new URL(urlStr);
+        return ALLOWED_DOMAINS.some(domain => 
+            url.hostname === domain || url.hostname.endsWith('.' + domain)
+        );
+    } catch (e) {
+        return false;
+    }
+}
+
 export async function GET(req: NextRequest) {
     const url = req.nextUrl.searchParams.get('url');
 
     if (!url) {
         return NextResponse.json({ error: 'Missing URL parameter' }, { status: 400 });
+    }
+
+    if (!isUrlAllowed(url)) {
+        console.warn(`[LocalProxy] Blocked unauthorized URL: ${url}`);
+        return NextResponse.json({ error: 'URL not allowed' }, { status: 403 });
     }
 
     try {

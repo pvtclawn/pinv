@@ -38,7 +38,7 @@ Details: `memory/challenges/2026-02-09--pinv-security-red-team.md`
 ### Task 4: Fix Security P0s (BUILD LANE)
 **Goal:** Address CRITICAL/HIGH findings immediately.
 **Acceptance criteria:**
-- [ ] Add URL allowlist to `/api/proxy` (Allow only: coingecko.com, coincap.io, enstate.rs, base.org, alchemy.com)
+- [x] Add URL allowlist to `/api/proxy` (Allow only: coingecko.com, coincap.io, enstate.rs, base.org, alchemy.com)
 - [ ] Implement IP-based rate limiting on `/api/generate` (using Next.js middleware or simple memory store)
 - [ ] Remove debug logs in `api/generate/route.ts`
 
