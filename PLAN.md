@@ -6,9 +6,10 @@
 - Contracts: Base Sepolia only, not mainnet
 - pinv-mon: v0.2.0 — alerter, dashboard, live tests, 14 tests all passing
 - PMF: Analyzed + Red-teamed
-- Code audit: OG/box/contracts/lib/web reviewed — 1 CRITICAL, 2 HIGH findings
+- Code audit: All 4 packages reviewed — 1 CRITICAL, 2 HIGH security findings
+- Template Widgets: 3/3 built (Ticker, Portfolio, ENS)
 
-## Security (URGENT — before promoting)
+## Security (URGENT — P0)
 
 | # | Finding | Severity | Status |
 |---|---------|----------|--------|
@@ -24,47 +25,41 @@ Details: `memory/challenges/2026-02-09--pinv-security-red-team.md`
 ### ✅ Task 1: Code Audit
 - All 4 packages reviewed, findings in `CODE_REVIEW.md`
 - Key issues: dup generator logic (OG), SSRF proxy (web), no API auth
-- OG SWR + box pool both production-quality
 
 ### ✅ Task 2: Enhance pinv-mon
-- Alerter (consecutive down detection, latency thresholds, webhook support)
-- HTML dashboard at `/dashboard`
-- Live integration test — all 3 services confirmed healthy
+- Alerter, HTML dashboard, live integration test confirmed
 - Box metrics scraping working (auth key configured)
 
-## Completed Tasks (cont.)
-
-### ✅ Task 3: PMF Experiment — Template Widgets
-- [x] Widget 1: Crypto Price Ticker (CoinGecko, dark gradient, dual cards) — `6689aa4`
-- [x] Widget 2: Wallet Portfolio (Base RPC + CoinGecko, allocation bars) — `e927310`
-- [x] Widget 3: ENS Profile Card (enstate.rs, avatar, records list) — `2c48308`
-- All use free public APIs (no keys needed)
-- [ ] Egor tests on Farcaster profile (needs deploy)
+### ✅ Task 3: Template Widgets
+- 3 high-quality templates built and pushed: `6689aa4`, `e927310`, `2c48308`
 
 ## Next Tasks
 
-### Task 4: End-to-end Widget Testing
-**Goal:** Test template widgets through the live PinV pipeline (box exec → OG render).
+### Task 4: Fix Security P0s (BUILD LANE)
+**Goal:** Address CRITICAL/HIGH findings immediately.
 **Acceptance criteria:**
-- [ ] Submit crypto-ticker dataCode to live box /execute endpoint
-- [ ] Verify OG renders the widget correctly
-- [ ] Document any rendering issues (Satori quirks, missing fonts)
+- [ ] Add URL allowlist to `/api/proxy` (Allow only: coingecko.com, coincap.io, enstate.rs, base.org, alchemy.com)
+- [ ] Implement IP-based rate limiting on `/api/generate` (using Next.js middleware or simple memory store)
+- [ ] Remove debug logs in `api/generate/route.ts`
 
-### Task 5: Fix Security Issues
-**Goal:** Address CRITICAL/HIGH findings before promoting PinV.
+### Task 5: End-to-end Widget Testing
+**Goal:** Test template widgets through the live PinV pipeline.
 **Acceptance criteria:**
-- [ ] Add URL allowlist to /api/proxy (SSRF fix)
-- [ ] Add basic rate limiting to /api/generate
-- [ ] PR to upstream or discuss with Egor
+- [ ] Submit crypto-ticker dataCode to live box /execute
+- [ ] Verify OG renders the widget correctly
+- [ ] Document rendering quirks
+
+### Task 6: Widget Hardening
+**Goal:** Improve reliability of template widgets.
+**Acceptance criteria:**
+- [ ] Add `timeout` to all `fetch` calls in template `dataCode.js`
+- [ ] Implement standard error fallback image in UI code
 
 ## Icebox (parked)
-- Fix SSRF proxy (waiting for Egor's go-ahead to PR upstream)
 - Base App Mini App registration (blocked on mainnet deploy)
 - Mainnet contract deployment (needs Egor decision)
-- AI generation improvements (needs PMF signal first)
-- Secondary market / trading features (premature)
+- Secondary market features (premature)
 
 ## Key Decisions Needed from Egor
-1. Fix the SSRF proxy? (PR to upstream, or leave for now?)
-2. Deploy contracts to Base mainnet?
-3. Which data APIs for template widgets? (CoinGecko, Alchemy, etc.)
+1. Approve the URL allowlist for the proxy?
+2. Mainnet deploy timing?
