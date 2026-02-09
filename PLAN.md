@@ -32,18 +32,30 @@ Details: `memory/challenges/2026-02-09--pinv-security-red-team.md`
 - Live integration test — all 3 services confirmed healthy
 - Box metrics scraping working (auth key configured)
 
-## Next Task
+## Completed Tasks (cont.)
 
-### Task 3: PMF Experiment — Template Widgets
-**Goal:** Build 3 high-quality widget templates to test Strategy 1 (Crypto Dashboards).
+### ✅ Task 3: PMF Experiment — Template Widgets
+- [x] Widget 1: Crypto Price Ticker (CoinGecko, dark gradient, dual cards) — `6689aa4`
+- [x] Widget 2: Wallet Portfolio (Base RPC + CoinGecko, allocation bars) — `e927310`
+- [x] Widget 3: ENS Profile Card (enstate.rs, avatar, records list) — `2c48308`
+- All use free public APIs (no keys needed)
+- [ ] Egor tests on Farcaster profile (needs deploy)
+
+## Next Tasks
+
+### Task 4: End-to-end Widget Testing
+**Goal:** Test template widgets through the live PinV pipeline (box exec → OG render).
 **Acceptance criteria:**
-- [ ] Widget 1: ETH/BTC price ticker (live data, clean design)
-- [ ] Widget 2: Wallet portfolio summary (top 5 tokens + total value)
-- [ ] Widget 3: ENS profile card (avatar, name, records)
-- [ ] Each widget works end-to-end: dataCode → box execution → OG render
-- [ ] Egor tests on his Farcaster profile
+- [ ] Submit crypto-ticker dataCode to live box /execute endpoint
+- [ ] Verify OG renders the widget correctly
+- [ ] Document any rendering issues (Satori quirks, missing fonts)
 
-**Blocked on:** Egor confirming which data APIs are available (CoinGecko key? Alchemy?)
+### Task 5: Fix Security Issues
+**Goal:** Address CRITICAL/HIGH findings before promoting PinV.
+**Acceptance criteria:**
+- [ ] Add URL allowlist to /api/proxy (SSRF fix)
+- [ ] Add basic rate limiting to /api/generate
+- [ ] PR to upstream or discuss with Egor
 
 ## Icebox (parked)
 - Fix SSRF proxy (waiting for Egor's go-ahead to PR upstream)
