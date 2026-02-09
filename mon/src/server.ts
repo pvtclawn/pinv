@@ -3,9 +3,11 @@
  * 
  * Hono-based HTTP server exposing:
  *   GET /             → Dashboard JSON overview
+ *   GET /dashboard    → HTML dashboard (auto-refresh)
  *   GET /healthz      → Own health
  *   GET /services     → All service summaries
  *   GET /services/:n  → Single service detail (incl. history)
+ *   GET /alerts       → Recent alerts
  *   GET /metrics      → Prometheus-format metrics for pinv-mon itself
  */
 
@@ -14,6 +16,8 @@ import { cors } from 'hono/cors';
 import client from 'prom-client';
 import type { Collector } from './collector';
 import { Aggregator } from './aggregator';
+import { Alerter } from './alerter';
+import { renderDashboard } from './dashboard';
 
 // Self-metrics registry
 const register = new client.Registry();
@@ -40,9 +44,22 @@ const targetLatency = new client.Gauge({
   registers: [register],
 });
 
+const alertsFired = new client.Counter({
+  name: 'pinv_mon_alerts_fired_total',
+  help: 'Total alerts fired',
+  labelNames: ['level', 'service'] as const,
+  registers: [register],
+});
+
 export function createServer(collector: Collector): Hono {
   const app = new Hono();
   const aggregator = new Aggregator(collector);
+  const alerter = new Alerter({
+    latencyWarnMs: parseInt(process.env.PINV_MON_LATENCY_WARN_MS || '2000', 10),
+    latencyCritMs: parseInt(process.env.PINV_MON_LATENCY_CRIT_MS || '5000', 10),
+    downThreshold: parseInt(process.env.PINV_MON_DOWN_THRESHOLD || '2', 10),
+    webhookUrl: process.env.PINV_MON_WEBHOOK_URL,
+  });
 
   app.use('*', cors());
 
@@ -50,15 +67,22 @@ export function createServer(collector: Collector): Hono {
 
   app.get('/', (c) => {
     const overview = aggregator.getOverview();
-    
-    // Update Prometheus gauges
-    for (const svc of overview.services) {
-      const statusVal = svc.status === 'up' ? 1 : svc.status === 'degraded' ? 0.5 : 0;
-      targetStatus.set({ target: svc.name, type: svc.type }, statusVal);
-      targetLatency.set({ target: svc.name, type: svc.type }, svc.latency.current);
+    updatePrometheusGauges(overview.services);
+    return c.json(overview);
+  });
+
+  app.get('/dashboard', async (c) => {
+    const overview = aggregator.getOverview();
+    updatePrometheusGauges(overview.services);
+
+    // Evaluate alerts on dashboard view
+    const newAlerts = await alerter.evaluate(overview.services);
+    for (const a of newAlerts) {
+      alertsFired.inc({ level: a.level, service: a.service });
     }
 
-    return c.json(overview);
+    const html = renderDashboard(overview);
+    return c.html(html);
   });
 
   app.get('/services', (c) => {
@@ -80,10 +104,15 @@ export function createServer(collector: Collector): Hono {
     return c.json({
       summary,
       history: {
-        health: state.health.slice(-50), // Last 50 health checks
-        metrics: state.metrics.slice(-10), // Last 10 metric snapshots
+        health: state.health.slice(-50),
+        metrics: state.metrics.slice(-10),
       },
     });
+  });
+
+  app.get('/alerts', (c) => {
+    const limit = parseInt(c.req.query('limit') || '20', 10);
+    return c.json(alerter.getAlerts(limit));
   });
 
   app.get('/metrics', async (c) => {
@@ -92,6 +121,14 @@ export function createServer(collector: Collector): Hono {
       'content-type': register.contentType,
     });
   });
+
+  function updatePrometheusGauges(services: { name: string; type: string; status: string; latency: { current: number } }[]) {
+    for (const svc of services) {
+      const statusVal = svc.status === 'up' ? 1 : svc.status === 'degraded' ? 0.5 : 0;
+      targetStatus.set({ target: svc.name, type: svc.type }, statusVal);
+      targetLatency.set({ target: svc.name, type: svc.type }, svc.latency.current);
+    }
+  }
 
   return app;
 }

@@ -1,7 +1,10 @@
 import { describe, test, expect } from 'bun:test';
 import { parsePrometheusText, Collector } from './collector';
 import { Aggregator } from './aggregator';
+import { Alerter } from './alerter';
+import { renderDashboard } from './dashboard';
 import type { MonConfig } from './config';
+import type { InputAttestation } from './collector';
 
 describe('parsePrometheusText', () => {
   test('parses simple gauge', () => {
@@ -159,5 +162,109 @@ describe('Aggregator', () => {
     expect(svc.latency.avg).toBe(105);
     expect(svc.latency.p95).toBe(190); // 95th percentile of 10..200
     expect(svc.uptime.percent).toBe(100);
+  });
+});
+
+// ========================================
+// Alerter
+// ========================================
+describe('Alerter', () => {
+  test('fires critical alert after consecutive downs', async () => {
+    const alerter = new Alerter({ downThreshold: 2 });
+
+    // First down — no alert yet
+    let alerts = await alerter.evaluate([{
+      name: 'og', type: 'og', status: 'down', url: 'http://x',
+      latency: { current: 0, avg: 0, p95: 0, min: 0, max: 0 },
+      uptime: { percent: 0, totalChecks: 1, upChecks: 0, downChecks: 1, degradedChecks: 0 },
+      lastCheck: Date.now(), keyMetrics: {},
+    }]);
+    expect(alerts.length).toBe(0);
+
+    // Second down — alert fires
+    alerts = await alerter.evaluate([{
+      name: 'og', type: 'og', status: 'down', url: 'http://x',
+      latency: { current: 0, avg: 0, p95: 0, min: 0, max: 0 },
+      uptime: { percent: 0, totalChecks: 2, upChecks: 0, downChecks: 2, degradedChecks: 0 },
+      lastCheck: Date.now(), keyMetrics: {},
+    }]);
+    expect(alerts.length).toBe(1);
+    expect(alerts[0].level).toBe('critical');
+    expect(alerts[0].message).toContain('DOWN');
+  });
+
+  test('resets down counter when service recovers', async () => {
+    const alerter = new Alerter({ downThreshold: 2 });
+
+    // One down
+    await alerter.evaluate([{
+      name: 'og', type: 'og', status: 'down', url: 'http://x',
+      latency: { current: 0, avg: 0, p95: 0, min: 0, max: 0 },
+      uptime: { percent: 0, totalChecks: 1, upChecks: 0, downChecks: 1, degradedChecks: 0 },
+      lastCheck: Date.now(), keyMetrics: {},
+    }]);
+
+    // Recovery
+    await alerter.evaluate([{
+      name: 'og', type: 'og', status: 'up', url: 'http://x',
+      latency: { current: 100, avg: 100, p95: 100, min: 100, max: 100 },
+      uptime: { percent: 50, totalChecks: 2, upChecks: 1, downChecks: 1, degradedChecks: 0 },
+      lastCheck: Date.now(), keyMetrics: {},
+    }]);
+
+    // Another down — counter reset, no alert
+    const alerts = await alerter.evaluate([{
+      name: 'og', type: 'og', status: 'down', url: 'http://x',
+      latency: { current: 0, avg: 0, p95: 0, min: 0, max: 0 },
+      uptime: { percent: 33, totalChecks: 3, upChecks: 1, downChecks: 2, degradedChecks: 0 },
+      lastCheck: Date.now(), keyMetrics: {},
+    }]);
+    expect(alerts.length).toBe(0);
+  });
+
+  test('fires latency warning', async () => {
+    const alerter = new Alerter({ latencyWarnMs: 500, latencyCritMs: 2000 });
+
+    const alerts = await alerter.evaluate([{
+      name: 'box', type: 'box', status: 'up', url: 'http://x',
+      latency: { current: 800, avg: 400, p95: 800, min: 100, max: 800 },
+      uptime: { percent: 100, totalChecks: 10, upChecks: 10, downChecks: 0, degradedChecks: 0 },
+      lastCheck: Date.now(), keyMetrics: {},
+    }]);
+    expect(alerts.length).toBe(1);
+    expect(alerts[0].level).toBe('warn');
+  });
+});
+
+// ========================================
+// Dashboard HTML
+// ========================================
+describe('renderDashboard', () => {
+  test('renders valid HTML with service cards', () => {
+    const html = renderDashboard({
+      timestamp: Date.now(),
+      overall: 'healthy',
+      services: [{
+        name: 'og', type: 'og', status: 'up', url: 'https://pinv-og.fly.dev',
+        latency: { current: 120, avg: 130, p95: 200, min: 80, max: 300 },
+        uptime: { percent: 99.5, totalChecks: 200, upChecks: 199, downChecks: 1, degradedChecks: 0 },
+        lastCheck: Date.now(), keyMetrics: {},
+      }],
+    });
+
+    expect(html).toContain('<!DOCTYPE html>');
+    expect(html).toContain('pinv-mon');
+    expect(html).toContain('🟢');
+    expect(html).toContain('og');
+    expect(html).toContain('99.5%');
+  });
+
+  test('renders empty state', () => {
+    const html = renderDashboard({
+      timestamp: Date.now(),
+      overall: 'healthy',
+      services: [],
+    });
+    expect(html).toContain('No targets configured');
   });
 });
