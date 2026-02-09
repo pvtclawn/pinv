@@ -9,16 +9,19 @@
 - Code audit: All 4 packages reviewed — 1 CRITICAL, 2 HIGH security findings
 - Template Widgets: 3/3 built (Ticker, Portfolio, ENS)
 
-## Security (URGENT — P0)
+## P0 Priorities (Security & Reliability)
 
 | # | Finding | Severity | Status |
 |---|---------|----------|--------|
-| 1 | Open SSRF proxy `/api/proxy` | **CRITICAL** | ❌ Open |
-| 2 | No rate limiting on `/api/generate` | HIGH | ❌ Open |
-| 3 | Widget code can exfiltrate via fetch | HIGH | ❌ Open (box arch) |
-| 4 | Debug logging in prod | LOW | ❌ Open |
+| 1 | Open SSRF proxy `/api/proxy` | **CRITICAL** | ✅ Fixed (`026b03c`) |
+| 2 | Brittle `fetch` shim in Box (50% failure) | **P0** | ❌ Open |
+| 3 | No rate limiting on `/api/generate` | HIGH | ❌ Open |
+| 4 | Widget code can exfiltrate via fetch | HIGH | ❌ Open (box arch) |
+| 5 | Debug logging in prod | LOW | ❌ Open |
 
-Details: `memory/challenges/2026-02-09--pinv-security-red-team.md`
+Details: 
+- `memory/challenges/2026-02-09--pinv-security-red-team.md`
+- `memory/challenges/2026-02-09--box-runtime-failure-analysis.md`
 
 ## Completed Tasks
 
@@ -35,11 +38,12 @@ Details: `memory/challenges/2026-02-09--pinv-security-red-team.md`
 
 ## Next Tasks
 
-### Task 4: Fix Security P0s (BUILD LANE)
-**Goal:** Address CRITICAL/HIGH findings immediately.
+### Task 4: Fix P0s (BUILD LANE)
+**Goal:** Address CRITICAL security and reliability findings immediately.
 **Acceptance criteria:**
-- [x] Add URL allowlist to `/api/proxy` (Allow only: coingecko.com, coincap.io, enstate.rs, base.org, alchemy.com)
-- [ ] Implement IP-based rate limiting on `/api/generate` (using Next.js middleware or simple memory store)
+- [x] Add URL allowlist to `/api/proxy` (Fixed in `026b03c`)
+- [ ] **Harden `fetch` shim** in `box/src/sandbox/bootstrap.ts` (Safe JSON parsing)
+- [ ] Implement IP-based rate limiting on `/api/generate`
 - [ ] Remove debug logs in `api/generate/route.ts`
 
 ### Task 5: End-to-end Widget Testing
@@ -61,5 +65,5 @@ Details: `memory/challenges/2026-02-09--pinv-security-red-team.md`
 - Secondary market features (premature)
 
 ## Key Decisions Needed from Egor
-1. Approve the URL allowlist for the proxy?
+1. Approve the URL allowlist for the proxy? (Implemented, awaiting review)
 2. Mainnet deploy timing?
