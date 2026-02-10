@@ -21,6 +21,7 @@ export interface Bundle {
     ver?: string; // manifest CID
     params?: NormalizedParams;
     ts?: number; // timestamp in seconds
+    snapshotCID?: string; // Optional CID for verifiable social proof
 }
 
 // Canonicalize params logic

@@ -33,7 +33,8 @@ export async function signBundle(
             { name: 'Pin_ID', type: 'uint256' },
             { name: 'Content_CID', type: 'string' },
             { name: 'Configuration_Hash', type: 'bytes32' },
-            { name: 'Timestamp', type: 'uint256' }
+            { name: 'Timestamp', type: 'uint256' },
+            { name: 'Snapshot_CID', type: 'string' }
         ]
     } as const;
 
@@ -41,7 +42,8 @@ export async function signBundle(
         Pin_ID: BigInt(pinId),
         Content_CID: bundle.ver || '',
         Configuration_Hash: paramsHash,
-        Timestamp: BigInt(bundle.ts)
+        Timestamp: BigInt(bundle.ts),
+        Snapshot_CID: bundle.snapshotCID || ''
     };
 
     const signature = await walletClient.signTypedData({

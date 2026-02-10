@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import PinParams from "@/components/shared/PinParams";
 import PinDisplayCard from "./PinDisplayCard";
-import { Share2, Edit, Check, Copy, ChevronUp, ChevronDown } from "lucide-react";
+import { Share2, Edit, Check, Copy, ChevronUp, ChevronDown, ShieldCheck } from "lucide-react";
 import { buildOgUrl, buildShareUrl } from "@/lib/services/preview";
 import { sdk } from "@farcaster/miniapp-sdk";
 import { APP_CONFIG } from "@/lib/config";
@@ -29,6 +29,7 @@ import { formatEther } from "viem";
 import { cn } from "@/lib/utils";
 import { notify } from "@/components/shared/Notifications";
 import { fetchFromIpfs } from "@/lib/ipfs";
+import { uploadSnapshot } from "@/app/actions/pinata";
 
 interface PinViewerProps {
     pin: Pin;
@@ -60,6 +61,7 @@ export default function PinViewer({ pin, pinId, initialParams }: PinViewerProps)
     const [signedCache, setSignedCache] = useState<{ params: string, url: string } | null>(null);
     const [isCopying, setIsCopying] = useState(false);
     const [isSharing, setIsSharing] = useState(false);
+    const [isVerifying, setIsVerifying] = useState(false);
     const [copied, setCopied] = useState(false);
 
     // Lock to prevent concurrent signature requests
@@ -299,6 +301,79 @@ export default function PinViewer({ pin, pinId, initialParams }: PinViewerProps)
         }
     };
 
+    const handleVerifiableShare = async () => {
+        const toastId = 'snapshot-share';
+        try {
+            setIsVerifying(true);
+            notify("Creating Verifiable Snapshot...", "loading", { id: toastId });
+
+            // 1. Get current execution result from OG
+            const ogUrl = new URL(env.NEXT_PUBLIC_OG_ENGINE_URL);
+            ogUrl.pathname = '/og/preview';
+            
+            const previewRes = await fetch(ogUrl.toString(), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    dataCode: activePin.widget?.dataCode,
+                    params: values
+                })
+            });
+
+            if (!previewRes.ok) throw new Error("Failed to get execution snapshot");
+            const previewData = await previewRes.json();
+            
+            if (!previewData.result) throw new Error("Box execution failed for snapshot");
+
+            // 2. Upload result to IPFS
+            notify("Uploading to IPFS...", "loading", { id: toastId });
+            const { cid } = await uploadSnapshot(previewData.result);
+            if (!cid) throw new Error("IPFS upload failed");
+
+            // 3. Create and Sign Bundle with Snapshot CID
+            notify("Signing Verifiable Proof...", "loading", { id: toastId });
+            
+            if (!walletClient || !address) throw new Error("Wallet not connected");
+
+            const bundle: Bundle = {
+                ver: activePin.version,
+                params: values,
+                ts: Math.floor(Date.now() / 1000),
+                snapshotCID: cid
+            };
+
+            const sig = await signBundle(walletClient, address, pinId, bundle, chainId);
+            const b = encodeBundle(bundle);
+
+            const url = new URL(window.location.href);
+            url.pathname = `/p/${pinId}`;
+            url.searchParams.set('b', b);
+            url.searchParams.set('sig', sig);
+            
+            const finalUrl = url.toString();
+
+            notify("Proof Ready! Sharing...", "success", { id: toastId });
+
+            // 4. Social Share
+            const isFramed = typeof window !== 'undefined' && window.parent !== window;
+            if (isFramed) {
+                await sdk.actions.composeCast({
+                    text: `Verifiable proof of my gains! 🦞🛡️`,
+                    embeds: [finalUrl],
+                });
+            } else {
+                const farcastUrl = `https://farcaster.xyz/~/compose?text=${encodeURIComponent("Verifiable proof of my gains! 🦞🛡️")}&embeds[]=${encodeURIComponent(finalUrl)}`;
+                window.open(farcastUrl, '_blank', 'noopener,noreferrer');
+            }
+
+        } catch (e: any) {
+            console.error("Verifiable share failed", e);
+            notify(e.message || "Verifiable share failed", "error", { id: toastId });
+        } finally {
+            setIsVerifying(false);
+        }
+    };
+
     return (
         <div className="flex flex-col max-w-3xl mx-auto relative">
             <PinDisplayCard
@@ -386,47 +461,57 @@ export default function PinViewer({ pin, pinId, initialParams }: PinViewerProps)
 
                 {/* Actions Footer */}
                 <div className="w-full">
-                    <div className="grid grid-cols-3 gap-2 md:gap-4 w-full">
+                    <div className="grid grid-cols-4 gap-2 md:gap-4 w-full">
                         <div className="w-full [&>button]:w-full">
                             <Button
                                 variant="ghost"
-                                className="text-muted-foreground w-full h-10 px-2 font-bold tracking-wider"
+                                className="text-muted-foreground w-full h-10 px-1 font-bold tracking-wider"
                                 onClick={handleCopy}
                                 disabled={isCopying}
                             >
-                                {copied ? <Check className="w-4 h-4 mr-2 text-green-500" /> : <Copy className="w-4 h-4 mr-2" />}
-                                {isCopying ? "SIGNING..." : (copied ? "COPIED" : "COPY")}
+                                {copied ? <Check className="w-3.5 h-3.5 mr-1.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 mr-1.5" />}
+                                <span className="text-[10px] md:text-xs">{isCopying ? "SIGNING..." : (copied ? "COPIED" : "COPY")}</span>
                             </Button>
                         </div>
 
                         <Button
                             variant="secondary"
                             onClick={handleShare}
-                            className="w-full h-10 px-2 font-bold tracking-wider"
+                            className="w-full h-10 px-1 font-bold tracking-wider"
                             disabled={isSharing}
                         >
-                            <Share2 className="mr-2 h-4 w-4" />
-                            {isSharing ? "SIGNING..." : "SHARE"}
+                            <Share2 className="mr-1.5 h-3.5 w-3.5" />
+                            <span className="text-[10px] md:text-xs">{isSharing ? "SIGNING..." : "SHARE"}</span>
+                        </Button>
+
+                        <Button
+                            variant="outline"
+                            onClick={handleVerifiableShare}
+                            className="w-full h-10 px-1 font-bold tracking-wider border-(--brand-blue) text-(--brand-blue) hover:bg-(--brand-blue)/10"
+                            disabled={isVerifying}
+                        >
+                            {isVerifying ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="mr-1.5 h-3.5 w-3.5" />}
+                            <span className="text-[10px] md:text-xs">PROOF</span>
                         </Button>
 
                         <div className="w-full">
                             {isCreator ? (
                                 <Button
-                                    className="w-full h-10 px-2 font-bold tracking-wider"
+                                    className="w-full h-10 px-1 font-bold tracking-wider"
                                     asChild
                                 >
                                     <Link href={`/p/${pinId}/edit`}>
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        EDIT
+                                        <Edit className="mr-1.5 h-3.5 w-3.5" />
+                                        <span className="text-[10px] md:text-xs">EDIT</span>
                                     </Link>
                                 </Button>
                             ) : isOwner ? (
                                 <Button
-                                    className="w-full h-10 px-2 font-bold tracking-wider opacity-80"
+                                    className="w-full h-10 px-1 font-bold tracking-wider opacity-80"
                                     disabled
                                 >
-                                    <Check className="mr-2 h-4 w-4" />
-                                    MINTED
+                                    <Check className="mr-1.5 h-3.5 w-3.5" />
+                                    <span className="text-[10px] md:text-xs">MINTED</span>
                                 </Button>
                             ) : (
                                 <TxButton
@@ -439,8 +524,8 @@ export default function PinViewer({ pin, pinId, initialParams }: PinViewerProps)
                                         enabled: price !== undefined && loggedIn,
                                         onConfirmationSuccess: async () => { await refetchBalance(); }
                                     }}
-                                    text={price && price > BigInt(0) ? `MINT (${formatEther(price)} ETH)` : "MINT"}
-                                    className="w-full h-10 px-2 font-bold tracking-wider bg-(--brand-blue) text-white hover:opacity-90 border-none"
+                                    text={price && price > BigInt(0) ? `MINT` : "MINT"}
+                                    className="w-full h-10 px-1 font-bold tracking-wider bg-(--brand-blue) text-white hover:opacity-90 border-none"
                                 />
                             )}
                         </div>

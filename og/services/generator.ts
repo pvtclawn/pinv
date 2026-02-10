@@ -2,6 +2,7 @@ import { getPin } from '../infra/pin';
 import { executeBoxAction } from '../infra/box';
 import { renderImageInWorker } from '../infra/renderer';
 import { redis, memoryCache } from '../infra/cache';
+import { fetchIpfsJson } from '../infra/ipfs';
 import { CACHE_TTL, REVALIDATE_TTL, OG_WIDTH, OG_HEIGHT, MEMORY_CACHE_TTL } from '../utils/constants';
 
 // Internal Generation Function (Decoupled from Request)
@@ -41,7 +42,7 @@ export async function generateOgImage(pinId: number, queryParams: Record<string,
     // Use previewData as the source of truth for defaults (includes secrets)
     const defaultParams: Record<string, any> = { ...pin.widget?.previewData };
 
-    // 3. Apply Overrides / Bundle
+    // 3. Apply Overrides / Bundle / Snapshot
     const overrides: Record<string, string> = {};
     const reservedKeys = ['b', 'sig', 'ver', 'ts', 'tokenId', 't'];
     Object.keys(queryParams).forEach(key => {
@@ -49,10 +50,22 @@ export async function generateOgImage(pinId: number, queryParams: Record<string,
     });
 
     if (authorizedBundle) {
-        // NOTE: We already fetched the correct version above, so `pin.widget` contains the correct code/props.
-        // No need to call getManifest(ver) which was creating "CID=4" errors.
-
-        if (authorizedBundle && authorizedBundle.params) {
+        // --- IMMUTABLE SNAPSHOT LOGIC ---
+        // If the bundle contains a snapshotCID, we bypass box execution entirely
+        // and use the data stored on IPFS.
+        if (authorizedBundle.snapshotCID) {
+            const tSnapshotStart = performance.now();
+            console.log(`[OG] Rendering from Snapshot: ${authorizedBundle.snapshotCID}`);
+            try {
+                const snapshotData = await fetchIpfsJson(authorizedBundle.snapshotCID);
+                console.log(`[Perf] Snapshot Fetch: ${(performance.now() - tSnapshotStart).toFixed(2)}ms`);
+                if (snapshotData) {
+                    baseProps = { ...baseProps, ...snapshotData };
+                }
+            } catch (e) {
+                console.warn(`[OG] Failed to load snapshot ${authorizedBundle.snapshotCID}, falling back to execution.`);
+            }
+        } else if (authorizedBundle.params) {
             const dataCode = pin.widget?.dataCode;
             const encryptedCode = pin.widget?.encryptedCode;
             const encryptedParams = pin.widget?.encryptedParams;

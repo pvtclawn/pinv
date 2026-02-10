@@ -23,3 +23,13 @@ export async function getPinataUploadUrl() {
         throw new Error("Failed to generate upload token: " + error.message);
     }
 }
+
+export async function uploadSnapshot(data: any) {
+    try {
+        const upload = await pinata.upload.json(data);
+        return { cid: upload.IpfsHash };
+    } catch (error: any) {
+        console.error("Snapshot Upload Error:", error);
+        throw new Error("Failed to upload snapshot: " + error.message);
+    }
+}
