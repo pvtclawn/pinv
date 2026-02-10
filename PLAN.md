@@ -46,10 +46,10 @@ Details:
 ### Task 4: Fix Remaining Security/Contract P0s (BUILD LANE)
 **Goal:** Address CRITICAL marketplace and rate-limiting gaps.
 **Acceptance criteria:**
-- [ ] **Fix Token URI:** Implement `uri()` logic in `PinV.sol` to fetch from store.
-- [ ] **Rate Limiting:** Implement IP-based rate limiting on `/api/generate`.
-- [ ] **Disable Implementation:** Add `_disableInitializers()` to `PinVStore` implementation.
-- [ ] **Excess Refund:** Ensure `secondaryMint` refunds excess ETH.
+- [x] **Fix Token URI:** Implement `uri()` logic in `PinV.sol` to fetch from store. (Fixed in `e84a22c`)
+- [x] **Rate Limiting:** Implement IP-based rate limiting on `/api/generate`. (Fixed in `b58f23d`)
+- [x] **Disable Implementation:** Add `_disableInitializers()` to `PinVStore` implementation. (Fixed in `e84a22c`)
+- [x] **Excess Refund:** Ensure `secondaryMint` refunds excess ETH. (Fixed in `e84a22c`)
 
 ### Task 5: End-to-end Widget Testing
 **Goal:** Test template widgets through the live PinV pipeline.

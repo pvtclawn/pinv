@@ -15,8 +15,8 @@ async function generateText(
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${apiKey}`,
-            'HTTP-Referer': NEXT_PUBLIC_APP_URL, // Optional, for including your app on openrouter.ai rankings.
-            'X-Title': 'PinV', // Optional. Shows in rankings on openrouter.ai.
+            'HTTP-Referer': NEXT_PUBLIC_APP_URL,
+            'X-Title': 'PinV',
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -27,7 +27,7 @@ async function generateText(
             ],
             max_tokens: 10000,
             temperature: 1.0,
-            response_format: { type: "json_object" } // Prefer JSON mode if supported
+            response_format: { type: "json_object" }
         })
     });
 
@@ -45,8 +45,27 @@ async function generateText(
     return data.choices?.[0]?.message?.content || '';
 }
 
+// Simple in-memory rate limiting (P0 defense)
+// Note: Reset on Vercel cold starts, but provides basic protection
+const rateLimitMap = new Map<string, { count: number, resetAt: number }>();
+const LIMIT = 5; // requests per window
+const WINDOW_MS = 60 * 1000; // 1 minute
+
 export async function POST(req: Request) {
     try {
+        const ip = req.headers.get('x-forwarded-for') || 'local';
+        const now = Date.now();
+        const userLimit = rateLimitMap.get(ip);
+
+        if (userLimit && now < userLimit.resetAt) {
+            if (userLimit.count >= LIMIT) {
+                return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+            }
+            userLimit.count++;
+        } else {
+            rateLimitMap.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+        }
+
         const { prompt, contextParams } = await req.json();
 
         if (!prompt) {
@@ -64,9 +83,6 @@ export async function POST(req: Request) {
         const apiKey = env.OPENROUTER_API_KEY;
 
         if (!apiKey) {
-            // Fallback to legacy keys if OpenRouter key is missing (backward compatibility)
-            // But for this task, we strongly assume user added OPENROUTER_API_KEY
-            // We'll throw specific error to prompt user if it's missing.
             return NextResponse.json({ error: 'OPENROUTER_API_KEY not set' }, { status: 500 });
         }
 

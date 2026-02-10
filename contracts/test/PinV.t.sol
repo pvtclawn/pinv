@@ -154,4 +154,51 @@ contract PinVTest is Test {
         store.updateMetadata("Hacked", "Hacked");
         vm.stopPrank();
     }
+
+    function testRefunds() public {
+        vm.deal(user1, 1 ether);
+        vm.startPrank(user1);
+        (uint256 initialMintPrice, , , ) = pinV.config();
+        
+        uint256 balanceBefore = user1.balance;
+        uint256 overpay = 0.5 ether;
+        
+        pinV.mint{value: initialMintPrice + overpay}(user1, "Title", "Tagline", "Hash1", "");
+        
+        // Balance should be balanceBefore - initialMintPrice
+        assertEq(user1.balance, balanceBefore - initialMintPrice);
+        vm.stopPrank();
+
+        // Test secondary mint refund
+        address storeAddr = pinV.pinStores(1);
+        PinVStore store = PinVStore(payable(storeAddr));
+        uint256 secPrice = 0.02 ether;
+        
+        vm.startPrank(user1);
+        store.setSecondaryMintPrice(secPrice);
+        vm.stopPrank();
+
+        vm.deal(user2, 1 ether);
+        vm.startPrank(user2);
+        uint256 balanceBefore2 = user2.balance;
+        pinV.secondaryMint{value: secPrice + 0.1 ether}(1, 1, "");
+        assertEq(user2.balance, balanceBefore2 - secPrice);
+        vm.stopPrank();
+    }
+
+    function testTokenUri() public {
+        vm.deal(user1, 1 ether);
+        vm.startPrank(user1);
+        (uint256 initialMintPrice, , , ) = pinV.config();
+        pinV.mint{value: initialMintPrice}(user1, "Title", "Tagline", "CID1", "");
+        
+        assertEq(pinV.uri(1), "ipfs://CID1");
+        
+        address storeAddr = pinV.pinStores(1);
+        PinVStore store = PinVStore(payable(storeAddr));
+        store.addVersion("CID2");
+        
+        assertEq(pinV.uri(1), "ipfs://CID2");
+        vm.stopPrank();
+    }
 }

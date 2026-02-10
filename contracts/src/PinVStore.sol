@@ -65,6 +65,13 @@ contract PinVStore is Initializable, ReentrancyGuard, Config {
         _;
     }
 
+    // --- Constructor ---
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     // --- Initialization ---
 
     /**

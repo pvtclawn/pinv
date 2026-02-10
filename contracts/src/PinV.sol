@@ -82,8 +82,9 @@ contract PinV is ERC1155Supply, ReentrancyGuard, ConfigOwnable {
         string memory initialIpfsId,
         bytes memory data
     ) external payable nonReentrant {
-        if (msg.value < config.initialMintPrice) {
-            revert InsufficientPayment(config.initialMintPrice, msg.value);
+        uint256 price = config.initialMintPrice;
+        if (msg.value < price) {
+            revert InsufficientPayment(price, msg.value);
         }
 
         uint256 tokenId = nextTokenId;
@@ -104,6 +105,12 @@ contract PinV is ERC1155Supply, ReentrancyGuard, ConfigOwnable {
 
         _mint(to, tokenId, 1, data);
         emit Mint(tokenId, to, store, title);
+
+        // Refund excess
+        if (msg.value > price) {
+            (bool success, ) = payable(msg.sender).call{value: msg.value - price}("");
+            if (!success) revert TransferFailed();
+        }
     }
 
     /**
@@ -130,15 +137,20 @@ contract PinV is ERC1155Supply, ReentrancyGuard, ConfigOwnable {
             revert InsufficientPayment(totalPrice, msg.value);
         }
 
-        uint256 fee = (msg.value * storeConfig.secondaryMintFeeBps) / BASIS_POINTS;
-        uint256 creatorShare = msg.value - fee;
+        uint256 fee = (totalPrice * storeConfig.secondaryMintFeeBps) / BASIS_POINTS;
+        uint256 creatorShare = totalPrice - fee;
 
         (bool success, ) = payable(address(store)).call{value: creatorShare}("");
-
         if (!success) revert TransferFailed();
 
         _mint(msg.sender, tokenId, amount, data);
         emit SecondaryMint(tokenId, msg.sender, amount, totalPrice, fee);
+
+        // Refund excess
+        if (msg.value > totalPrice) {
+            (bool s, ) = payable(msg.sender).call{value: msg.value - totalPrice}("");
+            if (!s) revert TransferFailed();
+        }
     }
 
     // --- Admin / Configuration ---
@@ -163,17 +175,14 @@ contract PinV is ERC1155Supply, ReentrancyGuard, ConfigOwnable {
     function uri(
         uint256 _tokenId
     ) public view override returns (string memory) {
-        // We could delegate this to the store if it holds the metadata URI
-        // For now, return default or empty, or fetch from store?
-        // User didn't specify URI logic, but usually we prefer a standard JSON.
-        // We'll leave it simple for now, maybe return the IPFS of the latest version from the store?
-        // Accessing the store:
-        address store = pinStores[_tokenId];
-        if (store != address(0)) {
-            // Ideally we'd return a metadata JSON.
-            // Let's just standard ERC1155 uri if set, or empty.
-            return super.uri(_tokenId);
-        }
-        return super.uri(_tokenId);
+        address storeAddr = pinStores[_tokenId];
+        if (storeAddr == address(0)) return "";
+
+        PinVStore store = PinVStore(payable(storeAddr));
+        uint256 latest = store.latestVersion();
+        if (latest == 0) return "";
+
+        string memory cid = store.versions(latest);
+        return string(abi.encodePacked("ipfs://", cid));
     }
 }
