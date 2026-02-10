@@ -4,9 +4,9 @@
 - Codebase: 15k LOC, 145 commits, 4 packages (web/og/box/mon)
 - **Live at**: pinv.app (Vercel), pinv-og.fly.dev (Fly.io), Phala TEE (box)
 - Contracts: Base Sepolia only, not mainnet
-- pinv-mon: v0.2.0 — alerter, dashboard, live tests, 14 tests all passing
+- pinv-mon: v0.2.0 — alerter, dashboard, live tests, 15 tests all passing
 - PMF: Analyzed + Red-teamed
-- Code audit: All 4 packages reviewed — 1 CRITICAL, 2 HIGH security findings
+- Code audit: All 4 packages reviewed — 2 CRITICAL, 3 HIGH security findings
 - Template Widgets: 3/3 built (Ticker, Portfolio, ENS)
 
 ## P0 Priorities (Security & Reliability)
@@ -15,22 +15,24 @@
 |---|---------|----------|--------|
 | 1 | Open SSRF proxy `/api/proxy` | **CRITICAL** | ✅ Fixed (`026b03c`) |
 | 2 | Brittle `fetch` shim in Box (50% failure) | **P0** | ✅ Fixed (`406f1b6`) |
-| 3 | Host IP Concentration (429 risk) | **CRITICAL** | ❌ Open |
-| 4 | Secret Leakage in Box Logs | **HIGH** | ❌ Open |
+| 3 | Token `uri()` no-op (Marketplace Invisibility) | **CRITICAL** | ❌ Open |
+| 4 | Host IP Concentration (429 risk) | **P0** | ✅ Fixed (`d82c251`) |
 | 5 | No rate limiting on `/api/generate` | HIGH | ❌ Open |
-| 6 | Widget code can exfiltrate via fetch | HIGH | ❌ Open (box arch) |
-| 7 | Debug logging in prod | LOW | ❌ Open |
+| 6 | Secret Leakage in Box Logs | **HIGH** | ✅ Fixed (`58a7487`) |
+| 7 | Creator Fee Entrapment | HIGH | ❌ Open |
+| 8 | Widget code can exfiltrate via fetch | HIGH | ❌ Open (box arch) |
+| 9 | Debug logging in prod | LOW | ✅ Fixed (`b58f23d`) |
 
 Details: 
 - `memory/challenges/2026-02-09--pinv-security-red-team.md`
 - `memory/challenges/2026-02-09--box-runtime-failure-analysis.md`
 - `memory/challenges/2026-02-10--infrastructure-scaling.md`
+- `memory/challenges/2026-02-10--store-security.md`
 
 ## Completed Tasks
 
 ### ✅ Task 1: Code Audit
 - All 4 packages reviewed, findings in `CODE_REVIEW.md`
-- Key issues: dup generator logic (OG), SSRF proxy (web), no API auth
 
 ### ✅ Task 2: Enhance pinv-mon
 - Alerter, HTML dashboard, live integration test confirmed
@@ -41,15 +43,13 @@ Details:
 
 ## Next Tasks
 
-### Task 4: Fix P0s (BUILD LANE)
-**Goal:** Address CRITICAL security and reliability findings immediately.
+### Task 4: Fix Remaining Security/Contract P0s (BUILD LANE)
+**Goal:** Address CRITICAL marketplace and rate-limiting gaps.
 **Acceptance criteria:**
-- [x] Add URL allowlist to `/api/proxy` (Fixed in `026b03c`)
-- [x] **Harden `fetch` shim** in `box/src/sandbox/bootstrap.ts` (Fixed in `406f1b6`)
-- [x] **Secret Redaction** in `box/src/sandbox/bootstrap.ts` (Fixed in `58a7487`)
-- [x] **Retry logic** in Box `fetch` shim (Fixed in `d82c251`)
-- [ ] Implement IP-based rate limiting on `/api/generate`
-- [x] Remove debug logs in `api/generate/route.ts` (Fixed in `d13f08d`)
+- [ ] **Fix Token URI:** Implement `uri()` logic in `PinV.sol` to fetch from store.
+- [ ] **Rate Limiting:** Implement IP-based rate limiting on `/api/generate`.
+- [ ] **Disable Implementation:** Add `_disableInitializers()` to `PinVStore` implementation.
+- [ ] **Excess Refund:** Ensure `secondaryMint` refunds excess ETH.
 
 ### Task 5: End-to-end Widget Testing
 **Goal:** Test template widgets through the live PinV pipeline.
@@ -67,8 +67,7 @@ Details:
 ## Icebox (parked)
 - Base App Mini App registration (blocked on mainnet deploy)
 - Mainnet contract deployment (needs Egor decision)
-- Secondary market features (premature)
 
 ## Key Decisions Needed from Egor
-1. Approve the URL allowlist for the proxy? (Implemented, awaiting review)
+1. Approve the Contract fixes (URI, refund, disable init)?
 2. Mainnet deploy timing?
