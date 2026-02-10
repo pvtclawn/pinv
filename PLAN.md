@@ -50,14 +50,13 @@ Details:
 
 ## Next Tasks
 
-### Task 5: End-to-end Widget Testing (BUILD LANE)
-**Goal:** Test template widgets through the live PinV pipeline.
-**Acceptance criteria:**
-- [ ] Submit crypto-ticker dataCode to live box /execute
-- [ ] Verify OG renders the widget correctly
-- [ ] Document rendering quirks
+### ✅ Task 5: End-to-end Widget Testing
+- [x] Submit template dataCode to live Box `/execute` (Verified via `/og/preview`)
+- [x] Verify OG renders all 3 templates correctly (`6689aa4`, `e927310`, `2c48308`)
+- [x] Add E2E integration test in `mon/` package (`src/e2e.test.ts`)
+- Documented: TEE latency ~1.5s, no layout quirks found for Lucide/Inter fonts.
 
-### Task 6: Widget Hardening
+### Task 6: Widget Hardening (BUILD LANE)
 **Goal:** Improve reliability of template widgets.
 **Acceptance criteria:**
 - [ ] Add `timeout` to all `fetch` calls in template `dataCode.js`
