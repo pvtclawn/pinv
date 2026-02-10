@@ -46,10 +46,10 @@ Details:
 **Acceptance criteria:**
 - [x] Add URL allowlist to `/api/proxy` (Fixed in `026b03c`)
 - [x] **Harden `fetch` shim** in `box/src/sandbox/bootstrap.ts` (Fixed in `406f1b6`)
-- [ ] **Secret Redaction** in `box/src/sandbox/bootstrap.ts` (Safe logger)
-- [ ] **Retry logic** in Box `fetch` shim (Mitigate IP concentration 429s)
+- [x] **Secret Redaction** in `box/src/sandbox/bootstrap.ts` (Fixed in `58a7487`)
+- [x] **Retry logic** in Box `fetch` shim (Fixed in `d82c251`)
 - [ ] Implement IP-based rate limiting on `/api/generate`
-- [ ] Remove debug logs in `api/generate/route.ts`
+- [x] Remove debug logs in `api/generate/route.ts` (Fixed in `d13f08d`)
 
 ### Task 5: End-to-end Widget Testing
 **Goal:** Test template widgets through the live PinV pipeline.

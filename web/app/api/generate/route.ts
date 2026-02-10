@@ -70,11 +70,13 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'OPENROUTER_API_KEY not set' }, { status: 500 });
         }
 
-        console.log("----------------------------------------------------------------");
-        console.log("[Generate Debug] System Prompt:", GENERATION_SYSTEM_PROMPT);
-        console.log("[Generate Debug] User Content:", userContent);
-        console.log("[Generate Debug] Model:", model);
-        console.log("----------------------------------------------------------------");
+        if (process.env.NODE_ENV === 'development') {
+            console.log("----------------------------------------------------------------");
+            console.log("[Generate Debug] System Prompt:", GENERATION_SYSTEM_PROMPT);
+            console.log("[Generate Debug] User Content:", userContent);
+            console.log("[Generate Debug] Model:", model);
+            console.log("----------------------------------------------------------------");
+        }
 
         const textContent = await generateText(model, GENERATION_SYSTEM_PROMPT, userContent, apiKey);
 
