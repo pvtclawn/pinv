@@ -10,30 +10,45 @@ export const POST = withAxiom(async (req: AxiomRequest) => {
         const HUB_URL = 'https://nemes.farcaster.xyz:2281';
         const verifyAppKey = createVerifyAppKeyWithHub(HUB_URL);
 
+        let validatedData;
         try {
-            await parseWebhookEvent(body, verifyAppKey);
+            validatedData = await parseWebhookEvent(body, verifyAppKey);
         } catch (err) {
             console.error('[MiniApp Webhook] Verification failed:', err);
-            // Don't log to Axiom on verification failure to avoid spam/DoS costs
             return NextResponse.json({ error: 'Invalid signature or app key' }, { status: 401 });
         }
 
-        // Log the validated event to Axiom for analytics/storage 
-        const fid = body.fid || body.untrustedData?.fid || 'unknown';
-        const timestamp = body.timestamp || Date.now();
+        const { fid, event } = validatedData;
+        const eventType = event.event;
+        const timestamp = Date.now();
         const eventId = `pinv:webhook:${fid}:${timestamp}`;
 
-        req.log.info('MiniApp Webhook Received', {
+        req.log.info('MiniApp Webhook Verified', {
             eventId,
             fid,
-            timestamp,
-            eventType: body.event || 'unknown',
-            payload: body
+            eventType,
+            event
         });
 
-        // withAxiom automatically flushes logs after the handler returns
-        console.log(`[MiniApp Webhook] Ingested event ${eventId} to Axiom`);
-        return NextResponse.json({ success: true, message: 'Event ingested' });
+        // Handle specific events
+        if (eventType === 'miniapp_added') {
+            const { notificationDetails } = event;
+            if (notificationDetails) {
+                console.log(`[MiniApp Webhook] User ${fid} added app. Notification Token: ${notificationDetails.token.slice(0, 8)}...`);
+                // TODO: Store notificationDetails.token and notificationDetails.url in KV indexed by FID
+                // await kv.hset(`user:${fid}`, { 
+                //    notificationToken: notificationDetails.token, 
+                //    notificationUrl: notificationDetails.url 
+                // });
+            }
+        } else if (eventType === 'miniapp_removed') {
+            console.log(`[MiniApp Webhook] User ${fid} removed app.`);
+            // TODO: Remove notification info from KV
+            // await kv.hdel(`user:${fid}`, 'notificationToken', 'notificationUrl');
+        }
+
+        console.log(`[MiniApp Webhook] Processed verified event ${eventType} for FID ${fid}`);
+        return NextResponse.json({ success: true, message: 'Event processed' });
     } catch (error) {
         console.error('[MiniApp Webhook] Error processing request:', error);
         req.log.error('MiniApp Webhook Server Error', { error: String(error) });

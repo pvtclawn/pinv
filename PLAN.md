@@ -60,14 +60,12 @@ Details:
 
 ## Next Tasks
 
-### Task 6: Secure Webhooks (BUILD LANE)
-**Goal:** Implement Ed25519 verification for Farcaster Mini App events.
-**Acceptance criteria:**
-- [ ] Add cryptographic signature verification for `/api/webhook`.
-- [ ] Reject any event not signed by a valid user app key.
-- [ ] Document the security model.
+### ✅ Task 6: Secure Webhooks
+- [x] Add cryptographic signature verification for `/api/webhook` (Fixed bug: was using unverified body fid).
+- [x] Reject any event not signed by a valid user app key (Handled by `@farcaster/miniapp-node`).
+- [x] Documented security model: uses standard JFS verification via public Hub.
 
-### Task 7: Social Sharing Snapshots
+### Task 7: Social Sharing Snapshots (BUILD LANE)
 **Goal:** Prevent context drift by creating immutable snapshots for shared widgets.
 **Acceptance criteria:**
 - [ ] Implement `Snapshot` schema for capturing dataCode output at share-time.
