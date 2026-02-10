@@ -14,14 +14,17 @@
 | # | Finding | Severity | Status |
 |---|---------|----------|--------|
 | 1 | Open SSRF proxy `/api/proxy` | **CRITICAL** | ✅ Fixed (`026b03c`) |
-| 2 | Brittle `fetch` shim in Box (50% failure) | **P0** | ❌ Open |
-| 3 | No rate limiting on `/api/generate` | HIGH | ❌ Open |
-| 4 | Widget code can exfiltrate via fetch | HIGH | ❌ Open (box arch) |
-| 5 | Debug logging in prod | LOW | ❌ Open |
+| 2 | Brittle `fetch` shim in Box (50% failure) | **P0** | ✅ Fixed (`406f1b6`) |
+| 3 | Host IP Concentration (429 risk) | **CRITICAL** | ❌ Open |
+| 4 | Secret Leakage in Box Logs | **HIGH** | ❌ Open |
+| 5 | No rate limiting on `/api/generate` | HIGH | ❌ Open |
+| 6 | Widget code can exfiltrate via fetch | HIGH | ❌ Open (box arch) |
+| 7 | Debug logging in prod | LOW | ❌ Open |
 
 Details: 
 - `memory/challenges/2026-02-09--pinv-security-red-team.md`
 - `memory/challenges/2026-02-09--box-runtime-failure-analysis.md`
+- `memory/challenges/2026-02-10--infrastructure-scaling.md`
 
 ## Completed Tasks
 
@@ -42,7 +45,9 @@ Details:
 **Goal:** Address CRITICAL security and reliability findings immediately.
 **Acceptance criteria:**
 - [x] Add URL allowlist to `/api/proxy` (Fixed in `026b03c`)
-- [ ] **Harden `fetch` shim** in `box/src/sandbox/bootstrap.ts` (Safe JSON parsing)
+- [x] **Harden `fetch` shim** in `box/src/sandbox/bootstrap.ts` (Fixed in `406f1b6`)
+- [ ] **Secret Redaction** in `box/src/sandbox/bootstrap.ts` (Safe logger)
+- [ ] **Retry logic** in Box `fetch` shim (Mitigate IP concentration 429s)
 - [ ] Implement IP-based rate limiting on `/api/generate`
 - [ ] Remove debug logs in `api/generate/route.ts`
 
