@@ -53,7 +53,7 @@ Details: `memory/challenges/*.md`
 - [x] Implement `Snapshot` schema for capturing dataCode output at share-time. (Fixed in `018d8c1`)
 - [x] Update `og/` engine to render from snapshot CID when provided. (Fixed in `018d8c1`)
 - [x] Verify social proof is preserved after price changes.
-- [ ] **Harden Snapshot Integrity:** Move IPFS pinning from client to `og/` server to prevent "photoshopping" gains in browser memory. (CRITICAL)
+- [x] **Harden Snapshot Integrity:** Move IPFS pinning from client to `og/` server to prevent \"photoshopping\" gains in browser memory. (Fixed in `e6a3c9b`)
 
 ### Task 8: Verifiable Stack — VIN Integration (BUILD LANE)
 **Goal:** Replace trusted OpenRouter calls with verifiable VIN inference.

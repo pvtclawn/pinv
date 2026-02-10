@@ -29,7 +29,6 @@ import { formatEther } from "viem";
 import { cn } from "@/lib/utils";
 import { notify } from "@/components/shared/Notifications";
 import { fetchFromIpfs } from "@/lib/ipfs";
-import { uploadSnapshot } from "@/app/actions/pinata";
 
 interface PinViewerProps {
     pin: Pin;
@@ -305,9 +304,9 @@ export default function PinViewer({ pin, pinId, initialParams }: PinViewerProps)
         const toastId = 'snapshot-share';
         try {
             setIsVerifying(true);
-            notify("Creating Verifiable Snapshot...", "loading", { id: toastId });
+            notify(\"Creating Verifiable Snapshot...\", \"loading\", { id: toastId });
 
-            // 1. Get current execution result from OG
+            // 1. Get current execution result AND pin it on the server
             const ogUrl = new URL(env.NEXT_PUBLIC_OG_ENGINE_URL);
             ogUrl.pathname = '/og/preview';
             
@@ -316,24 +315,21 @@ export default function PinViewer({ pin, pinId, initialParams }: PinViewerProps)
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     dataCode: activePin.widget?.dataCode,
-                    params: values
+                    params: values,
+                    pinResult: true // Server handles IPFS upload directly for integrity
                 })
             });
 
-            if (!previewRes.ok) throw new Error("Failed to get execution snapshot");
+            if (!previewRes.ok) throw new Error(\"Failed to get execution snapshot\");
             const previewData = await previewRes.json();
             
-            if (!previewData.result) throw new Error("Box execution failed for snapshot");
+            if (!previewData.snapshotCID) throw new Error(\"Server failed to pin snapshot to IPFS\");
+            const cid = previewData.snapshotCID;
 
-            // 2. Upload result to IPFS
-            notify("Uploading to IPFS...", "loading", { id: toastId });
-            const { cid } = await uploadSnapshot(previewData.result);
-            if (!cid) throw new Error("IPFS upload failed");
-
-            // 3. Create and Sign Bundle with Snapshot CID
-            notify("Signing Verifiable Proof...", "loading", { id: toastId });
+            // 2. Create and Sign Bundle with Snapshot CID
+            notify(\"Signing Verifiable Proof...\", \"loading\", { id: toastId });
             
-            if (!walletClient || !address) throw new Error("Wallet not connected");
+            if (!walletClient || !address) throw new Error(\"Wallet not connected\");
 
             const bundle: Bundle = {
                 ver: activePin.version,

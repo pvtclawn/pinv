@@ -31,6 +31,7 @@ export const env = createEnv({
         SIGNED_TS_MAX_AGE_SEC: z.coerce.number().default(86400),
         SIGNED_TS_FUTURE_SKEW_SEC: z.coerce.number().default(600),
         INTERNAL_AUTH_KEY: z.string().min(1).optional(),
+        PINATA_JWT: z.string().min(1).optional(),
     },
     runtimeEnv: process.env,
     emptyStringAsUndefined: true,

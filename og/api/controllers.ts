@@ -7,27 +7,26 @@ import { generateCacheKey } from '../utils/keygen';
 import { serveWithSWR } from '../services/swr';
 import { logToFile } from '../utils/logger';
 
+import { fetchIpfsJson, pinIpfsJson } from '../infra/ipfs';
 import { OG_WIDTH, OG_HEIGHT } from '../utils/constants';
 
 console.log('[DEBUG] Preview Request Recv');
 export async function previewHandler(req: FastifyRequest, reply: FastifyReply) {
     try {
-        const { dataCode, uiCode, params, encryptedCode, encryptedParams, publicParams } = req.body as {
+        const { dataCode, uiCode, params, encryptedCode, encryptedParams, publicParams, pinResult } = req.body as {
             dataCode?: string,
             uiCode?: string,
             params?: any,
             encryptedCode?: string,
             encryptedParams?: string,
-            publicParams?: any
+            publicParams?: any,
+            pinResult?: boolean
         };
 
         let result = {};
         let logs: string[] = [];
 
         // Box Execution Logic
-        // We support both:
-        // 1. Direct Script (dataCode -> script) for Dev/Simple
-        // 2. Encrypted Code (encryptedCode -> encryptedCode) for Secure
         if (dataCode || encryptedCode) {
             const execRes = await executeBoxAction({
                 code: dataCode,
@@ -39,6 +38,14 @@ export async function previewHandler(req: FastifyRequest, reply: FastifyReply) {
             logs = execRes.logs || [];
         } else {
             result = params || {};
+        }
+
+        let snapshotCID = null;
+        if (pinResult && Object.keys(result).length > 0) {
+            snapshotCID = await pinIpfsJson(result);
+            if (snapshotCID) {
+                logs.push(`[Snapshot] Pinned execution result to IPFS: ${snapshotCID}`);
+            }
         }
 
         let imageBase64 = null;
@@ -55,7 +62,7 @@ export async function previewHandler(req: FastifyRequest, reply: FastifyReply) {
             }
         }
 
-        return reply.send({ result, logs, image: imageBase64 });
+        return reply.send({ result, logs, image: imageBase64, snapshotCID });
     } catch (e: any) {
         req.log.error(e);
         logToFile(`[Preview] Error: ${e.message}`);

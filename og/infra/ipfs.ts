@@ -116,3 +116,39 @@ export async function fetchIpfsJson(cid: string): Promise<any> {
     pendingFetches.set(cid, fetchPromise);
     return fetchPromise;
 }
+
+export async function pinIpfsJson(json: any, name: string = "PinV-Snapshot"): Promise<string | null> {
+    const jwt = env.PINATA_JWT;
+    if (!jwt) {
+        console.warn("[IPFS] PINATA_JWT not configured, cannot pin snapshot.");
+        return null;
+    }
+
+    try {
+        logToFile(`[IPFS] Pinning JSON to Pinata: ${name}`);
+        const resp = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${jwt}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                pinataContent: json,
+                pinataMetadata: { name }
+            })
+        });
+
+        if (!resp.ok) {
+            const err = await resp.text();
+            throw new Error(`Pinata Error ${resp.status}: ${err}`);
+        }
+
+        const data: any = await resp.json();
+        console.log(`[IPFS] Pinned successfully: ${data.IpfsHash}`);
+        return data.IpfsHash;
+    } catch (e: any) {
+        console.error("[IPFS] Pinning Failed:", e.message);
+        logToFile(`[IPFS] Pinning Failed: ${e.message}`);
+        return null;
+    }
+}
