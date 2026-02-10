@@ -16,13 +16,14 @@
 | 3 | Token `uri()` no-op (Invisible NFTs) | **CRITICAL** | ✅ Fixed (`492e0a9`) |
 | 4 | Host IP Concentration (429 risk) | **P0** | ✅ Fixed (`d82c251`) |
 | 5 | Webhook Authentication Gap | **CRITICAL** | ✅ Fixed (`979a866`) |
-| 6 | Verifiable Generation Gap (Puppet Master) | **CRITICAL** | ❌ Open |
-| 7 | No global rate limiting on generation | HIGH | ⚠️ Local Fixed (`b58f23d`) |
-| 8 | Secret Leakage in Box Logs | **HIGH** | ✅ Fixed (`58a7487`) |
-| 9 | Context Drift in Social Sharing | **HIGH** | ❌ Open |
-| 10| Creator Fee Entrapment | HIGH | ❌ Open |
-| 11| Unverified Secret Provisioning | HIGH | ❌ Open |
-| 12| Proof of Execution (Watermarking) | MEDIUM | ❌ Open |
+| 6 | Client-side Snapshot Tampering | **CRITICAL** | ❌ Open |
+| 7 | Verifiable Generation Gap (Puppet Master) | **CRITICAL** | ❌ Open |
+| 8 | No global rate limiting on generation | HIGH | ⚠️ Local Fixed (`b58f23d`) |
+| 9 | Secret Leakage in Box Logs | **HIGH** | ✅ Fixed (`58a7487`) |
+| 10| Context Drift in Social Sharing | **HIGH** | ✅ Fixed (`018d8c1`) |
+| 11| Creator Fee Entrapment | HIGH | ❌ Open |
+| 12| Unverified Secret Provisioning | HIGH | ❌ Open |
+| 13| Proof of Execution (Watermarking) | MEDIUM | ❌ Open |
 
 Details: `memory/challenges/*.md`
 
@@ -48,14 +49,13 @@ Details: `memory/challenges/*.md`
 
 ## Next Tasks
 
-### Task 7: Social Sharing Snapshots (BUILD LANE)
-**Goal:** Prevent context drift by creating immutable snapshots for shared widgets.
-**Acceptance criteria:**
-- [ ] Implement `Snapshot` schema for capturing dataCode output at share-time.
-- [ ] Update `og/` engine to render from snapshot CID when provided.
-- [ ] Verify social proof is preserved after price changes.
+### ✅ Task 7: Social Sharing Snapshots
+- [x] Implement `Snapshot` schema for capturing dataCode output at share-time. (Fixed in `018d8c1`)
+- [x] Update `og/` engine to render from snapshot CID when provided. (Fixed in `018d8c1`)
+- [x] Verify social proof is preserved after price changes.
+- [ ] **Harden Snapshot Integrity:** Move IPFS pinning from client to `og/` server to prevent "photoshopping" gains in browser memory. (CRITICAL)
 
-### Task 8: Verifiable Stack — VIN Integration
+### Task 8: Verifiable Stack — VIN Integration (BUILD LANE)
 **Goal:** Replace trusted OpenRouter calls with verifiable VIN inference.
 **Acceptance criteria:**
 - [ ] Audit `web/` to ensure secrets are encrypted client-side.
