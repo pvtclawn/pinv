@@ -1,5 +1,6 @@
 export const BOOTSTRAP_CODE = `
 const makeSafeLogger = (prefix = "") => (...args) => {
+    const SENSITIVE_KEYS = /api_?key|secret|private_?key|pk|password|token|auth|authorization/i;
     const safeArgs = args.map(arg => {
         if (arg instanceof Error) {
             return arg.stack || arg.toString();
@@ -8,6 +9,7 @@ const makeSafeLogger = (prefix = "") => (...args) => {
             try {
                 return JSON.stringify(arg, (k, v) => {
                     if (v instanceof Error) return v.stack || v.toString();
+                    if (typeof k === 'string' && SENSITIVE_KEYS.test(k)) return "[REDACTED]";
                     return typeof v === 'function' ? '[Function]' : v;
                 });
             } catch (e) {
