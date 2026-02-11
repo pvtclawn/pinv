@@ -26,6 +26,18 @@ export class BunWorkerPool extends EventEmitter {
         this.executionTimeout = options.executionTimeout || 10000; // 10s hard timeout
     }
 
+    /**
+     * Pre-spawn one worker so the first real request doesn't pay
+     * worker creation + module loading cost (Satori, Resvg, React, fonts).
+     */
+    public warmUp(): void {
+        if (this.workers.length === 0 && this.maxWorkers > 0) {
+            const worker = this.createWorker();
+            this.freeWorkers.push(worker);
+            console.log('[WorkerPool] Pre-warmed 1 worker');
+        }
+    }
+
     public async execute(data: any): Promise<any> {
         return new Promise((resolve, reject) => {
             const task: WorkerTask = {

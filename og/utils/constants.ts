@@ -12,10 +12,10 @@ export const CACHE_TTL = 604800; // 7 days (Long-term storage)
 export const IPFS_CACHE_TTL = 3600 * 24; // 24 hours
 export const PRIORITY_GATEWAY = env.PRIORITY_GATEWAY || env.NEXT_PUBLIC_IPFS_GATEWAY;
 export const PUBLIC_GATEWAYS = [
-    'https://cloudflare-ipfs.com/ipfs/',
+    'https://w3s.link/ipfs/',
     'https://ipfs.io/ipfs/',
+    'https://gateway.pinata.cloud/ipfs/',
     'https://dweb.link/ipfs/',
-    'https://gateway.pinata.cloud/ipfs/'
 ];
 
 export const REVALIDATE_TTL = 60; // 1 minute (Freshness check for dynamic content)
