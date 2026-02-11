@@ -136,15 +136,17 @@ OG images are served as raw PNG. Adding `Content-Encoding: gzip` or using Fastif
 
 ## Priority Improvement Roadmap
 
-| # | Fix | Impact | Effort |
-|---|-----|--------|--------|
-| 1 | Pin cache TTL 5s → 5min | 🔴 Eliminates ~90% of RPC calls | 1 line |
-| 3 | CDN cache headers for static | 🔴 Eliminates repeat renders | 5 lines |
-| 6 | Cache core fonts at worker startup | 🟡 Faster renders | 10 lines |
-| 5 | Pre-warm worker pool | 🟡 Faster cold starts | 15 lines |
-| 10 | Box fetch timeout | 🟡 Prevents hanging requests | 1 line |
-| 4 | Box env validation | 🟢 Code quality | 5 lines |
-| 7 | Optimize emoji detection | 🟡 ~2x render speedup | 30 lines |
-| 13 | PNG compression | 🟢 Bandwidth savings | 5 lines |
+| # | Fix | Impact | Effort | Status |
+|---|-----|--------|--------|--------|
+| 1 | Pin cache TTL 5s → 5min | 🔴 Eliminates ~90% of RPC calls | 1 line | ✅ `102b59d` |
+| 3 | CDN cache headers for static | 🔴 Eliminates repeat renders | 5 lines | ✅ `102b59d` |
+| 6 | Cache core fonts at worker startup | 🟡 Faster renders | 10 lines | ✅ Already cached at module scope |
+| 5 | Pre-warm worker pool | 🟡 Faster cold starts | 15 lines | ✅ `07fb383` |
+| 10 | Box fetch timeout | 🟡 Prevents hanging requests | 1 line | ✅ `102b59d` |
+| 4 | Box env validation | 🟢 Code quality | 5 lines | ✅ `102b59d` |
+| 9 | Update IPFS gateways | 🟢 Better reliability | 5 lines | ✅ `07fb383` |
+| 12 | Gate verbose logging | 🟢 Reduce prod log noise | 5 lines | ✅ `07fb383` |
+| 7 | Optimize emoji detection | 🟡 ~2x render speedup | 30 lines | ❌ Open |
+| 13 | PNG compression | 🟢 Bandwidth savings | 5 lines | ❌ Open |
 
 **Quick wins (< 30 min):** Items 1, 3, 10, 4 — massive impact for minimal effort.
