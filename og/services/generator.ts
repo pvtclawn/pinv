@@ -2,7 +2,7 @@ import { getPin } from '../infra/pin';
 import { executeBoxAction } from '../infra/box';
 import { renderImageInWorker } from '../infra/renderer';
 import { redis, memoryCache } from '../infra/cache';
-import { fetchIpfsJson } from '../infra/ipfs';
+import { fetchIpfsJson, verifyCidOrigin } from '../infra/ipfs';
 import { CACHE_TTL, REVALIDATE_TTL, OG_WIDTH, OG_HEIGHT, MEMORY_CACHE_TTL } from '../utils/constants';
 
 // Internal Generation Function (Decoupled from Request)
@@ -56,14 +56,22 @@ export async function generateOgImage(pinId: number, queryParams: Record<string,
         if (authorizedBundle.snapshotCID) {
             const tSnapshotStart = performance.now();
             console.log(`[OG] Rendering from Snapshot: ${authorizedBundle.snapshotCID}`);
-            try {
-                const snapshotData = await fetchIpfsJson(authorizedBundle.snapshotCID);
-                console.log(`[Perf] Snapshot Fetch: ${(performance.now() - tSnapshotStart).toFixed(2)}ms`);
-                if (snapshotData) {
-                    baseProps = { ...baseProps, ...snapshotData };
+
+            // Task 11: Verify the CID was pinned by our Pinata account
+            // Prevents malicious clients from injecting arbitrary IPFS CIDs
+            const cidVerified = await verifyCidOrigin(authorizedBundle.snapshotCID);
+            if (!cidVerified) {
+                console.warn(`[OG] Snapshot CID origin verification FAILED: ${authorizedBundle.snapshotCID}. Falling back to execution.`);
+            } else {
+                try {
+                    const snapshotData = await fetchIpfsJson(authorizedBundle.snapshotCID);
+                    console.log(`[Perf] Snapshot Fetch: ${(performance.now() - tSnapshotStart).toFixed(2)}ms`);
+                    if (snapshotData) {
+                        baseProps = { ...baseProps, ...snapshotData };
+                    }
+                } catch (e) {
+                    console.warn(`[OG] Failed to load snapshot ${authorizedBundle.snapshotCID}, falling back to execution.`);
                 }
-            } catch (e) {
-                console.warn(`[OG] Failed to load snapshot ${authorizedBundle.snapshotCID}, falling back to execution.`);
             }
         } else if (authorizedBundle.params) {
             const dataCode = pin.widget?.dataCode;

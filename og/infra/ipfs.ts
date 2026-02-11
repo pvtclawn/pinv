@@ -1,9 +1,14 @@
 import { IPFS_CACHE_TTL, PRIORITY_GATEWAY, PUBLIC_GATEWAYS } from '../utils/constants';
 import { logToFile } from '../utils/logger';
+import { env } from '../utils/env';
 
 // IPFS Cache (CID -> Content)
 // CIDs are immutable, so we can cache them for a very long time
 const ipfsCache = new Map<string, { data: any, expires: number }>();
+
+// CID origin verification cache (CID -> boolean)
+const cidVerifiedCache = new Map<string, { verified: boolean, expires: number }>();
+const CID_VERIFY_TTL = 3600_000; // 1 hour — CIDs are immutable, pin status is stable
 
 // Re-use in-flight requests to prevent Thundering Herd
 const pendingFetches = new Map<string, Promise<any>>();
@@ -132,5 +137,70 @@ export async function pinIpfsJson(json: any, name: string = "PinV-Snapshot"): Pr
         console.error("[IPFS] Pinning Failed:", e.message);
         logToFile(`[IPFS] Pinning Failed: ${e.message}`);
         return null;
+    }
+}
+
+/**
+ * Verify that a CID was pinned by our Pinata account.
+ * Prevents malicious clients from injecting arbitrary IPFS CIDs
+ * pointing to fake snapshot data (Task 11 — P0 #6).
+ */
+export async function verifyCidOrigin(cid: string): Promise<boolean> {
+    if (!cid) return false;
+
+    // Check cache first
+    const cached = cidVerifiedCache.get(cid);
+    if (cached && cached.expires > Date.now()) {
+        return cached.verified;
+    }
+
+    const jwt = env.PINATA_JWT;
+    if (!jwt) {
+        // No Pinata configured — fail open with warning in dev, fail closed in prod
+        const isProduction = env.NODE_ENV === 'production';
+        console.warn(`[IPFS] PINATA_JWT not configured. ${isProduction ? 'Rejecting' : 'Allowing'} CID: ${cid}`);
+        return !isProduction;
+    }
+
+    try {
+        logToFile(`[IPFS] Verifying CID origin: ${cid}`);
+        const resp = await fetch(
+            `https://api.pinata.cloud/data/pinList?hashContains=${cid}&status=pinned&pageLimit=1`,
+            {
+                headers: { "Authorization": `Bearer ${jwt}` },
+                signal: AbortSignal.timeout(5000),
+            }
+        );
+
+        if (!resp.ok) {
+            console.warn(`[IPFS] Pinata pinList error ${resp.status} for CID: ${cid}`);
+            logToFile(`[IPFS] Pinata pinList error ${resp.status}`);
+            // Fail closed — don't render unverifiable snapshots
+            return false;
+        }
+
+        const data: any = await resp.json();
+        const verified = data.count > 0;
+
+        // Cache result (bounded)
+        if (cidVerifiedCache.size >= 500) {
+            const oldestKey = cidVerifiedCache.keys().next().value;
+            if (oldestKey) cidVerifiedCache.delete(oldestKey);
+        }
+        cidVerifiedCache.set(cid, { verified, expires: Date.now() + CID_VERIFY_TTL });
+
+        if (!verified) {
+            console.warn(`[IPFS] CID NOT pinned by our account: ${cid}`);
+            logToFile(`[IPFS] CID origin verification FAILED: ${cid}`);
+        } else {
+            console.log(`[IPFS] CID verified: ${cid}`);
+        }
+
+        return verified;
+    } catch (e: any) {
+        console.error(`[IPFS] CID verification error: ${e.message}`);
+        logToFile(`[IPFS] CID verification error: ${e.message}`);
+        // Fail closed on error
+        return false;
     }
 }
