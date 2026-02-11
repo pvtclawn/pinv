@@ -7,6 +7,7 @@
     "dev:og": "cd og && bun run dev",
     "test:web": "bun run --filter pinv-web test",
     "test:og": "bun run --filter pinv-og test",
+    "test": "bun test mon/ og/ box/",
     "dev:box": "cd box && PORT=5555 bun run dev",
     "test:all": "bun run --filter '*' test",
     "build:all": "bun run --filter '*' build",

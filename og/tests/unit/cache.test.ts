@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'bun:test';
 import { memoryCache } from '../../infra/cache';
 import { MEMORY_CACHE_MAX_ITEMS } from '../../utils/constants';
 
