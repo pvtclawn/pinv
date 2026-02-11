@@ -146,7 +146,7 @@ OG images are served as raw PNG. Adding `Content-Encoding: gzip` or using Fastif
 | 4 | Box env validation | 🟢 Code quality | 5 lines | ✅ `102b59d` |
 | 9 | Update IPFS gateways | 🟢 Better reliability | 5 lines | ✅ `07fb383` |
 | 12 | Gate verbose logging | 🟢 Reduce prod log noise | 5 lines | ✅ `07fb383` |
-| 7 | Optimize emoji detection | 🟡 ~2x render speedup | 30 lines | ❌ Open |
-| 13 | PNG compression | 🟢 Bandwidth savings | 5 lines | ❌ Open |
+| 7 | Optimize emoji detection | 🟡 ~2x render speedup | 30 lines | ✅ `5df5216` |
+| 13 | PNG compression | 🟢 Bandwidth savings | 5 lines | ⏭️ Skipped (PNG already compressed) |
 
 **Quick wins (< 30 min):** Items 1, 3, 10, 4 — massive impact for minimal effort.
