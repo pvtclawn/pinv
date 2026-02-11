@@ -16,24 +16,6 @@ export async function fetchIpfsJson(cid: string): Promise<any> {
         return cachedIpfs.data;
     }
 
-    // --- MOCK INTERCEPTOR ---
-    if (cid === "QmdfTbBqBPQ7VNxZEYEj14VmRuZBkqFbiwReogJg460aa9") {
-        console.log("[MOCK] Returning Fake Manifest for Test CID");
-        return {
-            title: "Lifecycle Test Pin",
-            tagline: "Testing runOnce fix",
-            // The manifest USUALLY has `dataCode` as text.
-            // Let's hardcode a simple render to verify it works.
-            dataCode: "export const litActionCid = 'QmdfTbBqBPQ7VNxZEYEj14VmRuZBkqFbiwReogJg460aa8';",
-            uiCode: "export default function() { return <div style={{display:'flex', alignItems:'center', justifyContent:'center', width:'100%', height:'100%', fontSize: 60}}>LIFECYCLE TEST PASS</div> }",
-            litActionCid: "QmdfTbBqBPQ7VNxZEYEj14VmRuZBkqFbiwReogJg460aa8",
-            parameters: [{ name: "sim_api_key", type: "string", hidden: true }],
-            previewData: { sim_api_key: { ciphertext: "mocked", dataToEncryptHash: "mocked", accessControlConditions: [] } },
-            userConfig: {}
-        };
-    }
-    // ------------------------
-
     // 2. Coalescing: Check pending fetches
     if (pendingFetches.has(cid)) {
         console.log(`[Perf] IPFS Coalesced: ${cid}`);
