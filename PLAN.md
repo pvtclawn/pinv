@@ -20,7 +20,7 @@
 | 5 | Webhook Authentication Gap | **CRITICAL** | ✅ Fixed (`979a866`) |
 | 6 | Client-side Snapshot Tampering | **CRITICAL** | ⚠️ Partial (server-side pinning done, CID origin unverified) |
 | 7 | Verifiable Generation Gap (Puppet Master) | **CRITICAL** | ❌ Open (needs VIN / Task 8) |
-| 8 | No global rate limiting on generation | HIGH | ⚠️ Local Fixed (`b58f23d`) |
+| 8 | No global rate limiting on generation | HIGH | ✅ Fixed (`aaff5b5` — global 200/day + LRU cleanup) |
 | 9 | Secret Leakage in Box Logs | **HIGH** | ✅ Fixed (`58a7487`) |
 | 10| Context Drift in Social Sharing | **HIGH** | ✅ Fixed (`018d8c1`) |
 | 11| Creator Fee Entrapment | HIGH | ❌ Open |
@@ -67,7 +67,7 @@ Details: `memory/challenges/*.md`
 - [ ] Store VIN receipt on-chain/IPFS for verification.
 
 ### Task 9: Advanced Hardening
-- [ ] Global rate limiting (Upstash Redis).
+- [x] Global rate limiting — daily budget (200/day) + per-IP (5/min) + LRU cleanup (`aaff5b5`).
 - [ ] PNG watermarking with TEE execution ID.
 - [ ] Creator Fund Recovery path.
 
