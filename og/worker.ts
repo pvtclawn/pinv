@@ -5,8 +5,6 @@ import satori from 'satori';
 // @ts-ignore
 import { Resvg } from '@resvg/resvg-js';
 import React from 'react';
-// @ts-ignore
-import { renderToStaticMarkup } from 'react-dom/server';
 
 declare var self: any;
 
@@ -57,12 +55,14 @@ async function render(input: any) {
     const sandbox = createSandbox(baseUrl);
     const WidgetComponent = executeUserCode(uiCode, sandbox);
 
-    // 2. Pre-flight (Emoji)
+    // 2. Pre-flight (Emoji) — scan props + uiCode directly instead of double-rendering
     const element = React.createElement(WidgetComponent, props);
     let graphemeImages = {};
     try {
-        const htmlString = renderToStaticMarkup(element);
-        graphemeImages = await loadGraphemeImages(htmlString);
+        // Build a searchable string from all text sources without a full React render
+        const propsText = JSON.stringify(props);
+        const searchText = `${uiCode}\n${propsText}`;
+        graphemeImages = await loadGraphemeImages(searchText);
     } catch (e) {
         console.error("Emoji check failed", e);
     }
