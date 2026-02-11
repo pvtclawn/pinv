@@ -29,6 +29,9 @@ const pool = new BunWorkerPool(workerPath, {
 
 console.log(`[Renderer] Initialized Native Worker Pool (Max Workers: ${MAX_WORKERS})`);
 
+// Pre-warm one worker to avoid cold-start latency on first request
+pool.warmUp();
+
 // Helper: Stub Image
 export function getStubImage(text: string): Buffer {
     try {

@@ -69,7 +69,6 @@ export async function executeBoxAction(
         }
 
         const data = await response.json();
-        console.log('[BoxExecutor] Raw Data:', JSON.stringify(data));
 
         // 4. Parse Result
         // Box returns { status: "executed", result: ... }
@@ -78,10 +77,12 @@ export async function executeBoxAction(
 
         const logs: string[] = Array.isArray(data.logs) ? data.logs : ["[Box] Execution Successful (No logs returned)"];
 
-        console.log('[BoxExecutor] Logs received:', logs.length);
-        console.log('[BoxExecutor] First log:', logs[0]);
-
-        console.log('[BoxExecutor] Result:', result);
+        if (env.NODE_ENV !== 'production') {
+            console.log('[BoxExecutor] Raw Data:', JSON.stringify(data));
+            console.log('[BoxExecutor] Logs received:', logs.length);
+            console.log('[BoxExecutor] First log:', logs[0]);
+            console.log('[BoxExecutor] Result:', result);
+        }
 
         return { result, logs };
 
