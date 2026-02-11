@@ -45,26 +45,57 @@ async function generateText(
     return data.choices?.[0]?.message?.content || '';
 }
 
-// Simple in-memory rate limiting (P0 defense)
-// Note: Reset on Vercel cold starts, but provides basic protection
+// Rate limiting with daily global budget + per-IP sliding window
+// In-memory: resets on Vercel cold starts, but catches sustained abuse
 const rateLimitMap = new Map<string, { count: number, resetAt: number }>();
-const LIMIT = 5; // requests per window
-const WINDOW_MS = 60 * 1000; // 1 minute
+const IP_LIMIT = 5; // max requests per IP per window
+const IP_WINDOW_MS = 60 * 1000; // 1 minute
+
+// Global budget: prevent total API spend from spiraling
+let globalRequestCount = 0;
+let globalResetAt = Date.now() + 24 * 60 * 60 * 1000; // 24h window
+const GLOBAL_DAILY_LIMIT = 200; // max generations per day across all users
+
+// Periodic cleanup to prevent memory leak from stale IPs
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // every 5 min
+let lastCleanup = Date.now();
+
+function cleanupStaleLimits(now: number) {
+    if (now - lastCleanup < CLEANUP_INTERVAL_MS) return;
+    lastCleanup = now;
+    for (const [ip, entry] of rateLimitMap) {
+        if (now >= entry.resetAt) rateLimitMap.delete(ip);
+    }
+}
 
 export async function POST(req: Request) {
     try {
-        const ip = req.headers.get('x-forwarded-for') || 'local';
         const now = Date.now();
+        cleanupStaleLimits(now);
+
+        // Global daily budget check
+        if (now >= globalResetAt) {
+            globalRequestCount = 0;
+            globalResetAt = now + 24 * 60 * 60 * 1000;
+        }
+        if (globalRequestCount >= GLOBAL_DAILY_LIMIT) {
+            return NextResponse.json({ error: 'Daily generation limit reached. Try again tomorrow.' }, { status: 429 });
+        }
+
+        // Per-IP rate limiting
+        const ip = req.headers.get('x-forwarded-for') || 'local';
         const userLimit = rateLimitMap.get(ip);
 
         if (userLimit && now < userLimit.resetAt) {
-            if (userLimit.count >= LIMIT) {
-                return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+            if (userLimit.count >= IP_LIMIT) {
+                return NextResponse.json({ error: 'Too many requests. Please wait a minute.' }, { status: 429 });
             }
             userLimit.count++;
         } else {
-            rateLimitMap.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+            rateLimitMap.set(ip, { count: 1, resetAt: now + IP_WINDOW_MS });
         }
+
+        globalRequestCount++;
 
         const { prompt, contextParams } = await req.json();
 
