@@ -56,7 +56,7 @@ export async function serveWithSWR({ pinId, cacheKey, lockKey, generatorFn, repl
         // A. It is FRESH
         // B. It is STALE AND user is NOT forcing refresh
         if (isFresh || !forceRefresh) {
-            const dynamicTTL = isBundle ? 60 : REVALIDATE_TTL;
+            const dynamicTTL = isBundle ? 60 : 3600; // Bundles: 1min, Static: 1hr
             reply.header('Content-Type', 'image/png');
             reply.header('Cache-Control', `public, max-age=${dynamicTTL}, stale-while-revalidate=${dynamicTTL}`);
 
@@ -135,7 +135,7 @@ export async function serveWithSWR({ pinId, cacheKey, lockKey, generatorFn, repl
             await redis.set(freshKey, '1', 'EX', REVALIDATE_TTL).catch(() => { });
         }
 
-        const dynamicTTL = isBundle ? 60 : REVALIDATE_TTL;
+        const dynamicTTL = isBundle ? 60 : 3600; // Bundles: 1min, Static: 1hr
         reply.header('Content-Type', 'image/png');
         reply.header('Cache-Control', `public, max-age=${dynamicTTL}, stale-while-revalidate=${dynamicTTL}`);
         reply.header('X-Cache', 'MISS');

@@ -15,7 +15,7 @@ export const publicClient = createPublicClient({
 
 // Simple LRU Cache
 const pinCache = new Map<number, { data: Pin, expires: number }>();
-const CACHE_TTL = 5 * 1000;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes — on-chain data rarely changes
 
 export async function getPin(id: number, version?: bigint): Promise<Pin | null> {
     // Check Cache

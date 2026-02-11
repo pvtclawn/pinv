@@ -16,6 +16,7 @@ export const env = createEnv({
 
         // Integrations
         RPC_URL: z.string().url().optional(),
+        BOX_URL: z.string().url().optional().default("http://localhost:8080"),
         PRIORITY_GATEWAY: z.string().url().optional(),
         NEXT_PUBLIC_IPFS_GATEWAY: z.string().url().optional().default("https://ipfs.io"),
 
