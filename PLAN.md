@@ -18,7 +18,7 @@
 | 3 | Token `uri()` no-op (Invisible NFTs) | **CRITICAL** | ✅ Fixed (`492e0a9`) |
 | 4 | Host IP Concentration (429 risk) | **P0** | ✅ Fixed (`d82c251`) |
 | 5 | Webhook Authentication Gap | **CRITICAL** | ✅ Fixed (`979a866`) |
-| 6 | Client-side Snapshot Tampering | **CRITICAL** | ⚠️ Partial (server-side pinning done, CID origin unverified) |
+| 6 | Client-side Snapshot Tampering | **CRITICAL** | ✅ Fixed (`1899b06` — CID origin verification via Pinata) |
 | 7 | Verifiable Generation Gap (Puppet Master) | **CRITICAL** | ❌ Open (needs VIN / Task 8) |
 | 8 | No global rate limiting on generation | HIGH | ✅ Fixed (`aaff5b5` — global 200/day + LRU cleanup) |
 | 9 | Secret Leakage in Box Logs | **HIGH** | ✅ Fixed (`58a7487`) |
@@ -79,13 +79,15 @@ Details: `memory/challenges/*.md`
 - [ ] Separate unit/integration/e2e test configs.
 - [ ] Fix Vitest vs Bun test runner incompatibility (`vi.hoisted`).
 
-### Task 11: Snapshot CID Origin Verification (NEW)
-**Goal:** Prevent malicious clients from injecting arbitrary IPFS CIDs into bundles.
-**Acceptance criteria:**
-- [ ] OG service validates snapshot CID was pinned by our Pinata account.
-- [ ] OR: Snapshot data is co-signed with bundle signature (server-side attestation).
+### ✅ Task 11: Snapshot CID Origin Verification
+- [x] OG service validates snapshot CID was pinned by our Pinata account.
+- [x] Fails closed in production, falls back to live execution on failure.
+- [x] Bounded LRU cache (500 entries, 1h TTL) for verification results.
+- Commit: `1899b06`
 
 ## Key Decisions Needed from Egor
-1. Switch widget generation from OpenRouter to VIN?
-2. Upstash Redis for global rate limiting?
-3. Priority: Fix tests (Task 10) vs VIN integration (Task 8)?
+1. ~~Switch widget generation from OpenRouter to VIN?~~ **Deprioritized** (Feb 11)
+2. Upstash Redis for persistent rate limiting? (cold starts reset in-memory state)
+3. **NEW:** Ship magn.ee as a real product? (Egor considering after 2nd place finish)
+4. **NEW:** PinV priority — Task 11 (CID security) vs Task 10 (test env) vs user acquisition?
+5. **NEW:** Is PinV a product or a portfolio piece? Determines next investment level.
