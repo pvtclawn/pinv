@@ -1,7 +1,8 @@
+import { env } from '../utils/env';
 
 // Configuration
-const BOX_URL = process.env.BOX_URL || "http://localhost:8080";
-const INTERNAL_AUTH_KEY = process.env.INTERNAL_AUTH_KEY;
+const BOX_URL = env.BOX_URL || "http://localhost:8080";
+const INTERNAL_AUTH_KEY = env.INTERNAL_AUTH_KEY;
 
 interface BoxPayload {
     encryptedCode?: string;
@@ -58,7 +59,8 @@ export async function executeBoxAction(
                 encryptedParams: payload.encryptedParams,
                 publicParams: jsParams,
                 code: payload.code
-            })
+            }),
+            signal: AbortSignal.timeout(10000) // 10s hard timeout
         });
 
         if (!response.ok) {
