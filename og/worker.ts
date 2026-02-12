@@ -74,10 +74,45 @@ async function render(input: any) {
     const coreFonts = getCoreFonts();
     const allFonts = [...coreFonts, ...dynamicFonts];
 
+    // --- VISUAL WATERMARK WRAPPER (Task 15.1) ---
+    // Wraps the user component in a container with a verification footer.
+    const wrappedElement = React.createElement('div', {
+        style: {
+            display: 'flex',
+            flexDirection: 'column',
+            width: '100%',
+            height: '100%',
+            position: 'relative'
+        }
+    }, [
+        // The actual widget
+        element,
+        // The verification footer
+        props._pinvProof && React.createElement('div', {
+            style: {
+                position: 'absolute',
+                bottom: 0,
+                right: 0,
+                background: 'rgba(0,0,0,0.5)',
+                color: 'rgba(255,255,255,0.8)',
+                padding: '2px 8px',
+                fontSize: '12px',
+                borderTopLeftRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontFamily: 'Inter'
+            }
+        }, [
+            React.createElement('span', { style: { fontWeight: 'bold', color: '#00d4aa' } }, '🦞 PinV Verified'),
+            React.createElement('span', { style: { opacity: 0.6 } }, `Proof: ${props._pinvProof}`)
+        ])
+    ]);
+
     // 4. Satori
     let svg;
     try {
-        svg = await satori(element, {
+        svg = await satori(wrappedElement, {
             width,
             height,
             fonts: (allFonts.length > 0 ? allFonts : []) as any,

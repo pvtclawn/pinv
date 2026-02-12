@@ -4,6 +4,7 @@ import { extractPngMetadata } from '../../infra/watermark-verify';
 
 describe('Watermarking System', () => {
     const SECRET = 'test-secret';
+    const uiCode = 'export default function Widget() { return <div>Test</div> }';
     const dummyPng = Buffer.from([
         0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
         0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53, 0xDE,
@@ -14,7 +15,7 @@ describe('Watermarking System', () => {
     it('should watermark and verify successfully', () => {
         const snapshot = 'bafy-test-cid';
         const timestamp = 1770000000;
-        const hash = generateExecutionHash(snapshot, timestamp, SECRET);
+        const hash = generateExecutionHash(snapshot, uiCode, timestamp, SECRET);
         
         const metadata = JSON.stringify({ snapshot, timestamp, hash });
         const watermarked = injectPngMetadata(dummyPng, 'PinV-Proof', metadata);
@@ -23,21 +24,32 @@ describe('Watermarking System', () => {
         expect(extracted).toBe(metadata);
         
         const parsed = JSON.parse(extracted!);
-        const reHash = generateExecutionHash(parsed.snapshot, parsed.timestamp, SECRET);
+        const reHash = generateExecutionHash(parsed.snapshot, uiCode, parsed.timestamp, SECRET);
         expect(reHash).toBe(hash);
     });
 
     it('should fail if hash is tampered with', () => {
         const snapshot = 'bafy-test-cid';
         const timestamp = 1770000000;
-        const hash = generateExecutionHash(snapshot, timestamp, SECRET);
+        const hash = generateExecutionHash(snapshot, uiCode, timestamp, SECRET);
         
         const tamperedMetadata = JSON.stringify({ snapshot, timestamp, hash: 'wrong-hash' });
         const watermarked = injectPngMetadata(dummyPng, 'PinV-Proof', tamperedMetadata);
         
         const extracted = extractPngMetadata(watermarked, 'PinV-Proof');
         const parsed = JSON.parse(extracted!);
-        const reHash = generateExecutionHash(parsed.snapshot, parsed.timestamp, SECRET);
+        const reHash = generateExecutionHash(parsed.snapshot, uiCode, parsed.timestamp, SECRET);
         expect(reHash).not.toBe(parsed.hash);
+    });
+
+    it('should fail if uiCode is changed', () => {
+        const snapshot = 'bafy-test-cid';
+        const timestamp = 1770000000;
+        const hash = generateExecutionHash(snapshot, uiCode, timestamp, SECRET);
+        
+        const differentUiCode = 'export default function Malicious() { return <div>Phish</div> }';
+        const reHash = generateExecutionHash(snapshot, differentUiCode, timestamp, SECRET);
+        
+        expect(reHash).not.toBe(hash);
     });
 });

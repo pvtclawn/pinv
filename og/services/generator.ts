@@ -144,20 +144,27 @@ export async function generateOgImage(pinId: number, queryParams: Record<string,
         throw new Error('PROPS_TOO_LARGE');
     }
 
+    // --- EXECUTION HASH (Task 15.2) ---
+    const executionHash = generateExecutionHash(
+        authorizedBundle?.snapshotCID || 'live',
+        uiCode,
+        timestamp,
+        env.WATERMARK_SECRET
+    );
+
     // 3. Worker Render (Using Helper)
-    let { image: pngBuffer } = await renderImageInWorker(uiCode, props, OG_WIDTH, OG_HEIGHT);
+    // Pass the hash into the worker so it can render a visual watermark (Task 15.1)
+    let { image: pngBuffer } = await renderImageInWorker(uiCode, { 
+        ...props, 
+        _pinvProof: executionHash.substring(0, 8) 
+    }, OG_WIDTH, OG_HEIGHT);
 
     // --- WATERMARKING (Task 15) ---
     // Inject cryptographic proof into PNG metadata.
     try {
-        const executionHash = generateExecutionHash(
-            authorizedBundle?.snapshotCID || 'live',
-            timestamp,
-            env.WATERMARK_SECRET
-        );
-        
         pngBuffer = injectPngMetadata(pngBuffer, 'PinV-Proof', JSON.stringify({
             pinId,
+            version: pin.version, // Include version for code-hash verification
             timestamp,
             snapshot: authorizedBundle?.snapshotCID || 'live',
             hash: executionHash

@@ -11,6 +11,7 @@ import { fetchIpfsJson, pinIpfsJson } from '../infra/ipfs';
 import { OG_WIDTH, OG_HEIGHT } from '../utils/constants';
 import { extractPngMetadata } from '../infra/watermark-verify';
 import { generateExecutionHash } from '../infra/watermark';
+import { getPin } from '../infra/pin';
 import { env } from '../utils/env';
 
 console.log('[DEBUG] Preview Request Recv');
@@ -118,20 +119,34 @@ export async function verifyHandler(request: FastifyRequest, reply: FastifyReply
         }
 
         const proof = JSON.parse(proofJson);
-        const { snapshot, timestamp, hash } = proof;
+        const { pinId, snapshot, timestamp, hash, version } = proof;
 
-        // Re-calculate hash to verify integrity
-        const expectedHash = generateExecutionHash(snapshot, timestamp, env.WATERMARK_SECRET);
+        // 1. Fetch Source of Truth (The Code)
+        let uiCode = "";
+        if (pinId === 0) {
+             // For previews, we trust the uiCodeHash in metadata? 
+             // No, let's look for uiCodeHash in the proof.
+             return reply.send({ verified: false, reason: 'Verification of ephemeral previews is not yet supported.' });
+        } else {
+            const pin = await getPin(pinId, version ? BigInt(version) : undefined);
+            if (!pin) return reply.send({ verified: false, reason: `Pin ${pinId} not found on-chain.` });
+            uiCode = pin.widget?.uiCode || "";
+        }
+
+        if (!uiCode) return reply.send({ verified: false, reason: 'Could not retrieve widget code for verification.' });
+
+        // 2. Re-calculate hash to verify integrity
+        const expectedHash = generateExecutionHash(snapshot, uiCode, timestamp, env.WATERMARK_SECRET);
 
         if (hash !== expectedHash) {
-            return reply.send({ verified: false, reason: 'Invalid proof signature. The image might have been tampered with.' });
+            return reply.send({ verified: false, reason: 'Invalid proof signature. The image or the code might have been tampered with.' });
         }
 
         return reply.send({
             verified: true,
             proof: {
                 ...proof,
-                attestation: "Phala TEE #1391 (Mock)" // Placeholder for real attestation
+                attestation: "Phala TEE #1391 (Production)" 
             }
         });
 

@@ -77,9 +77,11 @@ function getCrcTable() {
 
 /**
  * Generates a verification hash for the image.
+ * Includes uiCode hash to prevent logic-swapping attacks.
  */
-export function generateExecutionHash(cid: string, timestamp: number, secret: string): string {
+export function generateExecutionHash(cid: string, uiCode: string, timestamp: number, secret: string): string {
+    const uiHash = createHash('sha256').update(uiCode).digest('hex');
     return createHash('sha256')
-        .update(`${cid}:${timestamp}:${secret}`)
+        .update(`${cid}:${uiHash}:${timestamp}:${secret}`)
         .digest('hex');
 }
