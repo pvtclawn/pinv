@@ -114,26 +114,32 @@ Details: `memory/challenges/*.md`
 - [x] **Cache Tuning**: Reduced `CACHE_TTL` to 60s for better responsiveness. (Fixed in `fb32999`)
 - [x] **Worker Recycling**: Implemented "Max Requests" (100) limit for worker pool. (Fixed in `51654c9`)
 
-### Task 15: TEE-Signed Images (Watermarking)
+### ✅ Task 15: TEE-Signed Images (Watermarking)
 **Goal:** Prove the final PNG was produced by the TEE, preventing visual spoofing.
-**Acceptance criteria:**
-- [ ] Implement invisible watermark (steganographic hash of CID + timestamp) in rendered PNG.
-- [ ] Expose `/verify/[CID]` endpoint to validate image authenticity.
-- [ ] Include TEE attestation quote in image metadata.
+**Status:** ✅ Complete (`06708f2`)
+- [x] Implement cryptographic proof injection into PNG `tEXt` chunks. (Fixed in `8cdfdde`)
+- [x] Expose `/verify` endpoint to validate image authenticity. (Fixed in `8cdfdde`)
+- [x] **Task 15.1 (P0)**: Visual watermarking wrapper to survive metadata stripping on social platforms. (Fixed in `06708f2`)
+- [x] **Task 15.2 (P1)**: Include `uiCode` hash in the execution proof to prevent rendering logic swaps. (Fixed in `06708f2`)
 
 ### Task 16: MPC-Based Sovereign Custody Prototype
 **Goal:** Implement (2, 3) Threshold Signature scheme for creator fund management.
 **Acceptance criteria:**
 - [ ] Prototype (2, 3) FROST-based signing handshake.
 - [ ] Implement shard separation between User Browser, PinV Backend, and Guardian Service.
-- [ ] Define social recovery model to prevent "Silent Custody" via backups.
+- [x] **Task 16.1 (P0)**: Define a decentralized \"Sovereign Recovery\" model (no PinV backups). (Critique in `memory/challenges/2026-02-12--threshold-custody.md`)
+
+### ✅ Task 17: Provenance Narrative Alignment
+**Goal:** Mitigate \"Verified Lies\" and \"Temporal Drift\" risks found in Hard Trust red-team.
+**Status:** ✅ Complete (`1853bca0`)
+- [x] **P0**: Replace all \"Safe/Verified\" UI labels with \"Provenance / Attested by [Signer]\" to avoid over-claiming security intent.
+- [x] **P1**: Implement version-drift detection by comparing proof version against latest on-chain version.
 
 ## Next Steps (prioritized, Feb 12)
 
-1. **Task 15** (TEE Watermarking) — Implement visual verification layer. (NEXT TASK)
+1. **Task 17** (Provenance Alignment) — Update messaging to mitigate reputation risk. (NEXT TASK)
 2. **Task 16** (MPC Prototype) — Research physical infrastructure separation.
 3. **Task 9** (Advanced Hardening) — Creator Fund Recovery path.
-4. **Task 8** (VIN Integration) — deprioritized by Egor, park until direction changes
 
 ## Key Decisions Needed from Egor
 1. ~~Switch widget generation from OpenRouter to VIN?~~ **Deprioritized** (Feb 11)

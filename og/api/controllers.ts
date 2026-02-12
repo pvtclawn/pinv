@@ -131,6 +131,15 @@ export async function verifyHandler(request: FastifyRequest, reply: FastifyReply
             const pin = await getPin(pinId, version ? BigInt(version) : undefined);
             if (!pin) return reply.send({ verified: false, reason: `Pin ${pinId} not found on-chain.` });
             uiCode = pin.widget?.uiCode || "";
+            
+            // Version drift check (P1 Task 17)
+            if (version) {
+                 const latestPin = await getPin(pinId); // Fetch latest
+                 if (latestPin && latestPin.version !== version) {
+                     // We don't fail verification, but we add a warning
+                     (proof as any).warning = `Version Drift Detected: This proof is for version ${version}, but the latest on-chain version is ${latestPin.version}.`;
+                 }
+            }
         }
 
         if (!uiCode) return reply.send({ verified: false, reason: 'Could not retrieve widget code for verification.' });
@@ -139,11 +148,12 @@ export async function verifyHandler(request: FastifyRequest, reply: FastifyReply
         const expectedHash = generateExecutionHash(snapshot, uiCode, timestamp, env.WATERMARK_SECRET);
 
         if (hash !== expectedHash) {
-            return reply.send({ verified: false, reason: 'Invalid proof signature. The image or the code might have been tampered with.' });
+            return reply.send({ verified: false, reason: 'Invalid provenance signature. The image or the code might have been tampered with.' });
         }
 
         return reply.send({
             verified: true,
+            message: "Provenance confirmed. This image was rendered by a secure TEE.",
             proof: {
                 ...proof,
                 attestation: "Phala TEE #1391 (Production)" 

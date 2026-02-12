@@ -104,7 +104,7 @@ async function render(input: any) {
                 fontFamily: 'Inter'
             }
         }, [
-            React.createElement('span', { style: { fontWeight: 'bold', color: '#00d4aa' } }, '🦞 PinV Verified'),
+            React.createElement('span', { style: { fontWeight: 'bold', color: '#00d4aa' } }, 'Provenance: Phala TEE'),
             React.createElement('span', { style: { opacity: 0.6 } }, `Proof: ${props._pinvProof}`)
         ])
     ]);
