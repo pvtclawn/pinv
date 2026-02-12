@@ -4,7 +4,7 @@ import { PORT, CHAIN_ID, CONTRACT_ADDRESS } from '../utils/constants';
 import { env } from '../utils/env';
 import { logEnv } from '@/lib/env-logger';
 
-import { previewHandler, getPinHandler } from './controllers';
+import { previewHandler, getPinHandler, verifyHandler } from './controllers';
 
 import { logToFile } from '../utils/logger';
 
@@ -77,6 +77,9 @@ server.get<{
         t: any; b?: string, sig?: string, params?: string, ver?: string, ts?: string, tokenId?: string
     }
 }>('/og/:pinId', getPinHandler);
+
+// Proof Verification
+server.post('/verify', verifyHandler);
 
 // Health
 server.get('/healthz', async () => ({ status: 'ok' }));

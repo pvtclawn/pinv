@@ -32,6 +32,7 @@ export const env = createEnv({
         SIGNED_TS_MAX_AGE_SEC: z.coerce.number().default(86400),
         SIGNED_TS_FUTURE_SKEW_SEC: z.coerce.number().default(600),
         INTERNAL_AUTH_KEY: z.string().min(1).optional(),
+        WATERMARK_SECRET: z.string().min(1).default("dev-secret-watermark"),
         // Required in production to enable CID origin verification (Task 11).
         // Without it, snapshot verification silently degrades.
         PINATA_JWT: process.env.NODE_ENV === 'production'

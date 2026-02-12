@@ -9,6 +9,9 @@ import { logToFile } from '../utils/logger';
 
 import { fetchIpfsJson, pinIpfsJson } from '../infra/ipfs';
 import { OG_WIDTH, OG_HEIGHT } from '../utils/constants';
+import { extractPngMetadata } from '../infra/watermark-verify';
+import { generateExecutionHash } from '../infra/watermark';
+import { env } from '../utils/env';
 
 console.log('[DEBUG] Preview Request Recv');
 export async function previewHandler(req: FastifyRequest, reply: FastifyReply) {
@@ -100,4 +103,39 @@ export async function getPinHandler(request: FastifyRequest<{
         forceRefresh: !!request.query.t,
         isBundle: !!ctx.authorizedBundle
     });
+}
+
+export async function verifyHandler(request: FastifyRequest, reply: FastifyReply) {
+    try {
+        const { imageBase64 } = request.body as { imageBase64: string };
+        if (!imageBase64) return reply.code(400).send({ error: 'Missing imageBase64' });
+
+        const buffer = Buffer.from(imageBase64, 'base64');
+        const proofJson = extractPngMetadata(buffer, 'PinV-Proof');
+
+        if (!proofJson) {
+            return reply.send({ verified: false, reason: 'No PinV metadata found in image.' });
+        }
+
+        const proof = JSON.parse(proofJson);
+        const { snapshot, timestamp, hash } = proof;
+
+        // Re-calculate hash to verify integrity
+        const expectedHash = generateExecutionHash(snapshot, timestamp, env.WATERMARK_SECRET);
+
+        if (hash !== expectedHash) {
+            return reply.send({ verified: false, reason: 'Invalid proof signature. The image might have been tampered with.' });
+        }
+
+        return reply.send({
+            verified: true,
+            proof: {
+                ...proof,
+                attestation: "Phala TEE #1391 (Mock)" // Placeholder for real attestation
+            }
+        });
+
+    } catch (e: any) {
+        return reply.code(500).send({ error: e.message });
+    }
 }

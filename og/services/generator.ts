@@ -3,11 +3,14 @@ import { executeBoxAction } from '../infra/box';
 import { renderImageInWorker } from '../infra/renderer';
 import { redis, memoryCache } from '../infra/cache';
 import { fetchIpfsJson, verifyCidOrigin } from '../infra/ipfs';
+import { injectPngMetadata, generateExecutionHash } from '../infra/watermark';
+import { env } from '../utils/env';
 import { CACHE_TTL, REVALIDATE_TTL, OG_WIDTH, OG_HEIGHT, MEMORY_CACHE_TTL } from '../utils/constants';
 
 // Internal Generation Function (Decoupled from Request)
 export async function generateOgImage(pinId: number, queryParams: Record<string, string>, authorizedBundle: any, cacheKey: string, preFetchedPin?: any): Promise<Buffer> {
     const t0 = performance.now();
+    const timestamp = Math.floor(Date.now() / 1000);
     let pin = preFetchedPin;
 
     // 1. Fetch Pin (if not provided)
@@ -142,7 +145,27 @@ export async function generateOgImage(pinId: number, queryParams: Record<string,
     }
 
     // 3. Worker Render (Using Helper)
-    const { image: pngBuffer } = await renderImageInWorker(uiCode, props, OG_WIDTH, OG_HEIGHT);
+    let { image: pngBuffer } = await renderImageInWorker(uiCode, props, OG_WIDTH, OG_HEIGHT);
+
+    // --- WATERMARKING (Task 15) ---
+    // Inject cryptographic proof into PNG metadata.
+    try {
+        const executionHash = generateExecutionHash(
+            authorizedBundle?.snapshotCID || 'live',
+            timestamp,
+            env.WATERMARK_SECRET
+        );
+        
+        pngBuffer = injectPngMetadata(pngBuffer, 'PinV-Proof', JSON.stringify({
+            pinId,
+            timestamp,
+            snapshot: authorizedBundle?.snapshotCID || 'live',
+            hash: executionHash
+        }));
+        console.log(`[OG] Image Watermarked: ${executionHash.substring(0, 8)}`);
+    } catch (e) {
+        console.error("[OG] Watermarking failed", e);
+    }
 
     // 4. Cache
     try {
