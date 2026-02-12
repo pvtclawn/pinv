@@ -107,10 +107,33 @@ Details: `memory/challenges/*.md`
 
 **Details:** `memory/challenges/2026-02-12--open-attack-surface.md`
 
+### ✅ Task 14: OG Infrastructure Hardening
+**Goal:** Address weaknesses found during OG red-team review.
+**Status:** ✅ Complete (`51654c9`)
+- [x] **Size Guard**: Implement strict size limits (100KB) for `uiCode` and `previewData`. (Fixed in `fb32999`)
+- [x] **Cache Tuning**: Reduced `CACHE_TTL` to 60s for better responsiveness. (Fixed in `fb32999`)
+- [x] **Worker Recycling**: Implemented "Max Requests" (100) limit for worker pool. (Fixed in `51654c9`)
+
+### Task 15: TEE-Signed Images (Watermarking)
+**Goal:** Prove the final PNG was produced by the TEE, preventing visual spoofing.
+**Acceptance criteria:**
+- [ ] Implement invisible watermark (steganographic hash of CID + timestamp) in rendered PNG.
+- [ ] Expose `/verify/[CID]` endpoint to validate image authenticity.
+- [ ] Include TEE attestation quote in image metadata.
+
+### Task 16: MPC-Based Sovereign Custody Prototype
+**Goal:** Implement (2, 3) Threshold Signature scheme for creator fund management.
+**Acceptance criteria:**
+- [ ] Prototype (2, 3) FROST-based signing handshake.
+- [ ] Implement shard separation between User Browser, PinV Backend, and Guardian Service.
+- [ ] Define social recovery model to prevent "Silent Custody" via backups.
+
 ## Next Steps (prioritized, Feb 12)
 
-1. **Task 9** (Advanced Hardening) — Creator Fund Recovery path + watermarking
-2. **Task 8** (VIN Integration) — deprioritized by Egor, park until direction changes
+1. **Task 15** (TEE Watermarking) — Implement visual verification layer. (NEXT TASK)
+2. **Task 16** (MPC Prototype) — Research physical infrastructure separation.
+3. **Task 9** (Advanced Hardening) — Creator Fund Recovery path.
+4. **Task 8** (VIN Integration) — deprioritized by Egor, park until direction changes
 
 ## Key Decisions Needed from Egor
 1. ~~Switch widget generation from OpenRouter to VIN?~~ **Deprioritized** (Feb 11)
