@@ -86,9 +86,9 @@ Details: `memory/challenges/*.md`
 - [x] Bounded LRU cache (500 entries, 1h TTL) for verification results.
 - Commit: `1899b06`
 
-### Task 12: OG Performance Optimization (NEW — branch `og-perf-quickwins`)
+### ✅ Task 12: OG Performance Optimization
 **Goal:** Optimize widget serving without sacrificing dynamic data freshness.
-**Status:** 9/10 fixes shipped, awaiting merge.
+**Status:** ✅ Complete (`fdeef72`)
 - [x] Pin cache TTL 5s → 5min (eliminates ~90% RPC calls)
 - [x] CDN cache headers 60s → 1hr for static widgets
 - [x] Box fetch 10s timeout (prevents hanging requests)
@@ -97,9 +97,7 @@ Details: `memory/challenges/*.md`
 - [x] IPFS gateways updated (replaced stale cloudflare-ipfs)
 - [x] Production log gating (verbose box logs dev-only)
 - [x] Emoji detection: eliminated double-render
-- [ ] ~~PNG compression~~ Skipped (PNG already compressed format)
-- Red-teamed: 3 low-risk items, all acceptable tradeoffs
-- Full review: `OG_REVIEW.md`
+- [x] **Merged to main** (`fdeef72`)
 
 ### ✅ Task 13: Quick Security Hardening (from Feb 12 red-team)
 **Goal:** Close trivially-exploitable gaps found in Lane F challenge.
@@ -111,14 +109,11 @@ Details: `memory/challenges/*.md`
 
 ## Next Steps (prioritized, Feb 12)
 
-1. **Task 13** (Quick Security Hardening) — W1 + W3 fixes, ~15 min total
-2. **Task 12 merge** — og-perf-quickwins branch ready, needs Egor OK to merge to main
-3. **Task 9** (Advanced Hardening) — Creator Fund Recovery path + watermarking
-4. **Task 8** (VIN Integration) — deprioritized by Egor, park until direction changes
+1. **Task 9** (Advanced Hardening) — Creator Fund Recovery path + watermarking
+2. **Task 8** (VIN Integration) — deprioritized by Egor, park until direction changes
 
 ## Key Decisions Needed from Egor
 1. ~~Switch widget generation from OpenRouter to VIN?~~ **Deprioritized** (Feb 11)
 2. Upstash Redis for persistent rate limiting? (cold starts reset in-memory state)
 3. Ship magn.ee as a real product? (Egor considering after 2nd place finish)
-4. Merge og-perf-quickwins branch to main? (9/10 fixes done, all tested)
-5. Is PinV a product or a portfolio piece? Determines next investment level.
+4. Is PinV a product or a portfolio piece? Determines next investment level.
