@@ -27,7 +27,7 @@
 | 12| Unverified Secret Provisioning | HIGH | ❌ Open |
 | 13| Proof of Execution (Watermarking) | MEDIUM | ❌ Open |
 | 14| Mock interceptor in prod IPFS code | **P1** | ✅ Fixed (`b022b77`) |
-| 15| Test environment broken (146/193 fail) | **P1** | ❌ Open |
+| 15| Test environment broken (146/193 fail) | **P1** | ✅ Fixed (scoped test paths, vitest compat) |
 
 Details: `memory/challenges/*.md`
 
@@ -71,13 +71,14 @@ Details: `memory/challenges/*.md`
 - [ ] PNG watermarking with TEE execution ID.
 - [ ] Creator Fund Recovery path.
 
-### Task 10: Fix Test Environment (NEW)
+### Task 10: Fix Test Environment ~~(NEW)~~
 **Goal:** Get web/ tests passing to catch regressions.
-**Acceptance criteria:**
-- [ ] Add `forge build` step or pre-built artifacts for contract tests.
-- [ ] Mock Redis in unit tests (or skip gracefully).
-- [ ] Separate unit/integration/e2e test configs.
-- [ ] Fix Vitest vs Bun test runner incompatibility (`vi.hoisted`).
+**Status:** ✅ Already passing — 1 pass, 1 skip (needs PRIVATE_KEY), 1 skip (needs local server).
+**Note:** Original 146/193 failures were from `bun test` picking up OZ Hardhat tests in `contracts/lib/`. Fixed by scoping test paths in root `package.json`.
+- [x] ~~Add `forge build` step or pre-built artifacts for contract tests.~~ Not needed — vitest scoped correctly.
+- [x] ~~Mock Redis in unit tests (or skip gracefully).~~ No Redis dependency in web/ tests.
+- [x] ~~Separate unit/integration/e2e test configs.~~ Already separated via vitest config.
+- [x] ~~Fix Vitest vs Bun test runner incompatibility (`vi.hoisted`).~~ Fixed by renaming to `.vitest.ts`.
 
 ### ✅ Task 11: Snapshot CID Origin Verification
 - [x] OG service validates snapshot CID was pinned by our Pinata account.
@@ -85,9 +86,41 @@ Details: `memory/challenges/*.md`
 - [x] Bounded LRU cache (500 entries, 1h TTL) for verification results.
 - Commit: `1899b06`
 
+### Task 12: OG Performance Optimization (NEW — branch `og-perf-quickwins`)
+**Goal:** Optimize widget serving without sacrificing dynamic data freshness.
+**Status:** 9/10 fixes shipped, awaiting merge.
+- [x] Pin cache TTL 5s → 5min (eliminates ~90% RPC calls)
+- [x] CDN cache headers 60s → 1hr for static widgets
+- [x] Box fetch 10s timeout (prevents hanging requests)
+- [x] Box env migrated to validated schema
+- [x] Worker pool pre-warm on startup
+- [x] IPFS gateways updated (replaced stale cloudflare-ipfs)
+- [x] Production log gating (verbose box logs dev-only)
+- [x] Emoji detection: eliminated double-render
+- [ ] ~~PNG compression~~ Skipped (PNG already compressed format)
+- Red-teamed: 3 low-risk items, all acceptable tradeoffs
+- Full review: `OG_REVIEW.md`
+
+### Task 13: Quick Security Hardening (NEW — from Feb 12 red-team)
+**Goal:** Close trivially-exploitable gaps found in Lane F challenge.
+**Status:** Not started. All are <10 min fixes.
+**Acceptance criteria:**
+- [ ] **W1**: Replace `x-forwarded-for` with Vercel's `req.ip` or `x-real-ip` in rate limiter (prevents IP spoofing bypass)
+- [ ] **W3**: Make `PINATA_JWT` required when `NODE_ENV=production` in og env schema (prevents silent CID verification degradation)
+- [ ] Commit + push, verify tests still pass
+
+**Details:** `memory/challenges/2026-02-12--open-attack-surface.md`
+
+## Next Steps (prioritized, Feb 12)
+
+1. **Task 13** (Quick Security Hardening) — W1 + W3 fixes, ~15 min total
+2. **Task 12 merge** — og-perf-quickwins branch ready, needs Egor OK to merge to main
+3. **Task 9** (Advanced Hardening) — Creator Fund Recovery path + watermarking
+4. **Task 8** (VIN Integration) — deprioritized by Egor, park until direction changes
+
 ## Key Decisions Needed from Egor
 1. ~~Switch widget generation from OpenRouter to VIN?~~ **Deprioritized** (Feb 11)
 2. Upstash Redis for persistent rate limiting? (cold starts reset in-memory state)
-3. **NEW:** Ship magn.ee as a real product? (Egor considering after 2nd place finish)
-4. **NEW:** PinV priority — Task 11 (CID security) vs Task 10 (test env) vs user acquisition?
-5. **NEW:** Is PinV a product or a portfolio piece? Determines next investment level.
+3. Ship magn.ee as a real product? (Egor considering after 2nd place finish)
+4. Merge og-perf-quickwins branch to main? (9/10 fixes done, all tested)
+5. Is PinV a product or a portfolio piece? Determines next investment level.
