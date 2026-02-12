@@ -77,11 +77,19 @@ function getCrcTable() {
 
 /**
  * Generates a verification hash for the image.
- * Includes uiCode hash to prevent logic-swapping attacks.
+ * Includes uiCode hash and props hash to prevent rendering logic or target swaps.
  */
-export function generateExecutionHash(cid: string, uiCode: string, timestamp: number, secret: string): string {
+export function generateExecutionHash(cid: string, uiCode: string, props: any, timestamp: number, secret: string): string {
     const uiHash = createHash('sha256').update(uiCode).digest('hex');
+    
+    // Deterministic Props Hashing (Sort keys)
+    const sortedProps = Object.keys(props).sort().reduce((acc: any, key) => {
+        acc[key] = props[key];
+        return acc;
+    }, {});
+    const propsHash = createHash('sha256').update(JSON.stringify(sortedProps)).digest('hex');
+    
     return createHash('sha256')
-        .update(`${cid}:${uiHash}:${timestamp}:${secret}`)
+        .update(`${cid}:${uiHash}:${propsHash}:${timestamp}:${secret}`)
         .digest('hex');
 }

@@ -144,10 +144,11 @@ export async function generateOgImage(pinId: number, queryParams: Record<string,
         throw new Error('PROPS_TOO_LARGE');
     }
 
-    // --- EXECUTION HASH (Task 15.2) ---
+    // --- EXECUTION HASH (Task 15.2, 15.3) ---
     const executionHash = generateExecutionHash(
         authorizedBundle?.snapshotCID || 'live',
         uiCode,
+        props,
         timestamp,
         env.WATERMARK_SECRET
     );
