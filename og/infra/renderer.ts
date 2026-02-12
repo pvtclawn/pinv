@@ -24,7 +24,8 @@ if (!fs.existsSync(workerPath)) {
 
 const pool = new BunWorkerPool(workerPath, {
     maxWorkers: MAX_WORKERS,
-    executionTimeout: 15000 // 15s timeout
+    executionTimeout: 15000, // 15s timeout
+    maxRequestsPerWorker: 100 // Recycle every 100 requests to prevent leaks (Task 14)
 });
 
 console.log(`[Renderer] Initialized Native Worker Pool (Max Workers: ${MAX_WORKERS})`);

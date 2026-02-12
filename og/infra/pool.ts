@@ -13,17 +13,20 @@ export class BunWorkerPool extends EventEmitter {
     private freeWorkers: Worker[] = [];
     private taskQueue: WorkerTask[] = [];
     private workerTaskMap: Map<Worker, WorkerTask> = new Map();
+    private workerRequestMap: Map<Worker, number> = new Map();
 
     private maxWorkers: number;
     private workerScript: string;
     private executionTimeout: number; // ms
+    private maxRequestsPerWorker: number;
     private taskIdCounter = 0;
 
-    constructor(workerScript: string, options: { maxWorkers?: number, executionTimeout?: number } = {}) {
+    constructor(workerScript: string, options: { maxWorkers?: number, executionTimeout?: number, maxRequestsPerWorker?: number } = {}) {
         super();
         this.workerScript = workerScript;
         this.maxWorkers = options.maxWorkers || 2; // Conservative default for Fly.io
         this.executionTimeout = options.executionTimeout || 10000; // 10s hard timeout
+        this.maxRequestsPerWorker = options.maxRequestsPerWorker || 0; // 0 = no limit
     }
 
     /**
@@ -65,6 +68,7 @@ export class BunWorkerPool extends EventEmitter {
     private createWorker(): Worker {
         const worker = new Worker(this.workerScript);
         this.workers.push(worker);
+        this.workerRequestMap.set(worker, 0); // Initialize request count (Task 14)
 
         worker.onmessage = (event) => {
             const result = event.data;
@@ -103,7 +107,22 @@ export class BunWorkerPool extends EventEmitter {
         if (task.timeout) clearTimeout(task.timeout);
 
         this.workerTaskMap.delete(worker);
-        this.freeWorkers.push(worker);
+
+        // Update request count and check for recycling (Task 14)
+        const count = (this.workerRequestMap.get(worker) || 0) + 1;
+        this.workerRequestMap.set(worker, count);
+
+        const shouldRecycle = this.maxRequestsPerWorker > 0 && count >= this.maxRequestsPerWorker;
+
+        if (shouldRecycle) {
+            console.log(`[WorkerPool] Recycling worker after ${count} requests`);
+            worker.terminate();
+            this.workers = this.workers.filter(w => w !== worker);
+            this.workerRequestMap.delete(worker);
+            // Don't add to freeWorkers
+        } else {
+            this.freeWorkers.push(worker);
+        }
 
         if (msg.error) {
             task.reject(new Error(msg.error));
