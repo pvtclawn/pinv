@@ -129,16 +129,16 @@ Details: `memory/challenges/*.md`
 - [ ] Implement shard separation between User Browser, PinV Backend, and Guardian Service.
 - [x] **Task 16.1 (P0)**: Define a decentralized \"Sovereign Recovery\" model (no PinV backups). (Critique in `memory/challenges/2026-02-12--threshold-custody.md`)
 
-### ✅ Task 17: Provenance Narrative Alignment
-**Goal:** Mitigate \"Verified Lies\" and \"Temporal Drift\" risks found in Hard Trust red-team.
+### ✅ Task 17: Social Proof Alignment
+**Goal:** Align infrastructure with the core "Dynamic Social Widget" vision.
 **Status:** ✅ Complete (`1853bca0`)
-- [x] **P0**: Replace all \"Safe/Verified\" UI labels with \"Provenance / Attested by [Signer]\" to avoid over-claiming security intent.
-- [x] **P1**: Implement version-drift detection by comparing proof version against latest on-chain version.
+- [x] **P0**: Standardize "Social Proof" indicators on widgets. (Proves image data matches on-chain code).
+- [x] **P1**: Implement version-drift detection to ensure shared images reflect the latest data/logic.
 
 ## Next Steps (prioritized, Feb 12)
 
-1. **Task 17** (Provenance Alignment) — Update messaging to mitigate reputation risk. (NEXT TASK)
-2. **Task 16** (MPC Prototype) — Research physical infrastructure separation.
+1. **Task 18** (New Template) — Build a high-value "DEX Pairs" or "NFT Floor" template. (NEXT TASK)
+2. **Task 16** (MPC Prototype) — Research sovereign fund management for creators.
 3. **Task 9** (Advanced Hardening) — Creator Fund Recovery path.
 
 ## Key Decisions Needed from Egor
