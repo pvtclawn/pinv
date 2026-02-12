@@ -138,9 +138,9 @@ Details: `memory/challenges/*.md`
 ### Task 19: Dynamic Vision Hardening (NEW — from #879 red-team)
 **Goal:** Address caching, timeout, and centralization risks in the dynamic widget vision.
 **Acceptance criteria:**
-- [ ] **P0**: Pre-render images at mint time and cache CID on-chain/IPFS to prevent crawler unfurl timeouts.
-- [ ] **P1**: Add "Last Updated" relative timestamps to high-velocity templates (DEX Pairs).
-- [ ] **P2**: Implement data fallbacks (e.g., Uniswap subgraph) in `dex-pairs.json` to handle primary API failures.
+- [ ] **P0: Pre-render on Mint**: Trigger IPFS snapshot pinning automatically during the minting transaction flow.
+- [ ] **P1: Relative Timestamps**: Implement a standard `RelativeTime` component for widgets to show data freshness.
+- [ ] **P2: API Resilience**: Add fallback data sources (e.g., GeckoTerminal) for the DEX Pairs template.
 
 ### Task 20: Widget Generation Perfection (NEW — branch `gen-feedback-research`)
 **Goal:** Implement RLHF-style feedback loops to improve widget generation.
@@ -152,6 +152,9 @@ Details: `memory/challenges/*.md`
 - [x] **Implicit Signal Tracking (P0)**: Automatically track widget \"Saves\" (Score 5) and \"Manual Edits\" (Score 3) as high-volume feedback. (Fixed in `7526a37`)
 - [x] **Compiler Validation (P0)**: Integrate code-quality checks into the benchmark suite to distinguish between \"Vibes\" and \"Functionality.\" (Fixed in `7526a37`)
 - [ ] **Prompt Iteration**: Refine `GENERATION_SYSTEM_PROMPT` using benchmark results.
+- [ ] **Granular Edit Scoring (P1)**: Implement Levenshtein distance calculation to distinguish minor tweaks from major logic fixes.
+- [ ] **Feedback Authentication (P0)**: Gate feedback submissions behind EIP-712 signatures to prevent data poisoning.
+- [ ] **Secret Scrubbing (P0)**: Implement regex-based scrubbing for the feedback dataset to prevent PII/Secret leakage.
 
 ### Task 21: Gateway Infrastructure Hardening (NEW — from #889 red-team)
 **Goal:** Address bridge fragility, registry volatility, and context poisoning.
