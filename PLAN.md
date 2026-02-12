@@ -121,6 +121,8 @@ Details: `memory/challenges/*.md`
 - [x] Expose `/verify` endpoint to validate image authenticity. (Fixed in `8cdfdde`)
 - [x] **Task 15.1 (P0)**: Visual watermarking wrapper to survive metadata stripping on social platforms. (Fixed in `06708f2`)
 - [x] **Task 15.2 (P1)**: Include `uiCode` hash in the execution proof to prevent rendering logic swaps. (Fixed in `06708f2`)
+- [ ] **Task 15.3 (P0)**: Include `props` (params) Merkle root in the execution hash to prevent parameter shadowing.
+- [ ] **Task 15.4 (P1)**: Implement LSB Steganography fallback for provenance survival across high-compression social platforms.
 
 ### Task 16: MPC-Based Sovereign Custody Prototype
 **Goal:** Implement (2, 3) Threshold Signature scheme for creator fund management.
