@@ -1,0 +1,3 @@
+{"id":"test-1","timestamp":"2026-02-12T13:45:00Z","prompt":"Show me ETH price","result":{"title":"ETH Price","tagline":"crypto, eth"},"score":5,"feedback":"Great!","model":"claude-3-opus"}
+{"id":"test-2","timestamp":"2026-02-12T13:50:00Z","prompt":"Show me BTC price","result":{"title":"BTC Price","tagline":"crypto, btc"},"score":3,"feedback":"Average.","model":"claude-3-haiku"}
+{"id":"test-3","timestamp":"2026-02-12T13:55:00Z","prompt":"DEX Pairs","result":{"title":"DEX Pairs","tagline":"dex"},"score":4,"feedback":"Good start.","model":"claude-3-opus"}

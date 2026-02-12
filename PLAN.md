@@ -145,10 +145,18 @@ Details: `memory/challenges/*.md`
 ### Task 20: Widget Generation Perfection (NEW — branch `gen-feedback-research`)
 **Goal:** Implement RLHF-style feedback loops to improve widget generation.
 **Acceptance criteria:**
-- [ ] **Data Collection**: Add a 1-5 star rating component to the widget editor preview.
-- [ ] **Feedback API**: Create an endpoint to store `prompt -> result + score` pairs.
-- [ ] **New Package**: Initialize `pinv-ai` (or `pinv-gen`) to house the system prompts and evaluation logic.
-- [ ] **Prompt Iteration**: Use collected data to refine the `GENERATION_SYSTEM_PROMPT`.
+- [x] **Data Collection**: Add a 1-5 star rating component to the widget editor preview. (Fixed in `ef6bf37`)
+- [x] **Feedback API**: Create an endpoint to store `prompt -> result + score` pairs. (Fixed in `ef6bf37`)
+- [x] **New Package**: Initialize `pinv-gen` to house system prompts and evaluation logic. (Fixed in `ef6bf37`)
+- [ ] **Benchmark Suite**: Create a script in `pinv-gen` to run the dataset against prompt variants.
+- [ ] **Prompt Iteration**: Refine `GENERATION_SYSTEM_PROMPT` using benchmark results.
+
+### Task 21: Gateway Infrastructure Hardening (NEW — from #889 red-team)
+**Goal:** Address bridge fragility, registry volatility, and context poisoning.
+**Acceptance criteria:**
+- [ ] **P0**: Implement a 100KB size guard for all tool outputs in the OpenClaw routing layer to prevent session poisoning.
+- [ ] **P0**: Configure a "Stable Fallback" model provider (e.g., direct Anthropic API) to bypass experimental bridges during failures.
+- [ ] **P1**: Implement a registry health check to validate model IDs before attempting a turn.
 
 ## Next Steps (prioritized, Feb 12)
 
