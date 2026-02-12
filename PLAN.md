@@ -101,13 +101,11 @@ Details: `memory/challenges/*.md`
 - Red-teamed: 3 low-risk items, all acceptable tradeoffs
 - Full review: `OG_REVIEW.md`
 
-### Task 13: Quick Security Hardening (NEW — from Feb 12 red-team)
+### ✅ Task 13: Quick Security Hardening (from Feb 12 red-team)
 **Goal:** Close trivially-exploitable gaps found in Lane F challenge.
-**Status:** Not started. All are <10 min fixes.
-**Acceptance criteria:**
-- [ ] **W1**: Replace `x-forwarded-for` with Vercel's `req.ip` or `x-real-ip` in rate limiter (prevents IP spoofing bypass)
-- [ ] **W3**: Make `PINATA_JWT` required when `NODE_ENV=production` in og env schema (prevents silent CID verification degradation)
-- [ ] Commit + push, verify tests still pass
+**Status:** ✅ Complete (`8c97373`)
+- [x] **W1**: Replace `x-forwarded-for` with `x-real-ip` in rate limiter (prevents IP spoofing bypass)
+- [x] **W3**: Make `PINATA_JWT` required when `NODE_ENV=production` in og env schema
 
 **Details:** `memory/challenges/2026-02-12--open-attack-surface.md`
 
