@@ -148,7 +148,9 @@ Details: `memory/challenges/*.md`
 - [x] **Data Collection**: Add a 1-5 star rating component to the widget editor preview. (Fixed in `ef6bf37`)
 - [x] **Feedback API**: Create an endpoint to store `prompt -> result + score` pairs. (Fixed in `ef6bf37`)
 - [x] **New Package**: Initialize `pinv-gen` to house system prompts and evaluation logic. (Fixed in `ef6bf37`)
-- [ ] **Benchmark Suite**: Create a script in `pinv-gen` to run the dataset against prompt variants.
+- [x] **Benchmark Suite**: Create a script in `pinv-gen` to run the dataset against prompt variants. (Fixed in `81fb0f3`)
+- [ ] **Implicit Signal Tracking (P0)**: Automatically track widget "Saves" (Score 5) and "Manual Edits" (Score 2) as high-volume feedback.
+- [ ] **Compiler Validation (P0)**: Integrate code-quality checks into the benchmark suite to distinguish between "Vibes" and "Functionality."
 - [ ] **Prompt Iteration**: Refine `GENERATION_SYSTEM_PROMPT` using benchmark results.
 
 ### Task 21: Gateway Infrastructure Hardening (NEW — from #889 red-team)

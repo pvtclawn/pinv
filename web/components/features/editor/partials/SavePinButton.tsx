@@ -33,6 +33,7 @@ interface SavePinButtonProps {
     className?: string;
     currentVersion?: string;
     onPrepareSave?: () => Promise<{ cid?: string | null; signature?: string | null } | null | undefined>;
+    onSuccess?: () => void;
 }
 
 export function SavePinButton({
@@ -114,6 +115,9 @@ export function SavePinButton({
                 'success',
                 { id: 'save-flow' }
             );
+
+            if (onSuccess) onSuccess();
+
             router.push(`/p/${pinId}`);
             router.refresh();
         } catch (e: any) {

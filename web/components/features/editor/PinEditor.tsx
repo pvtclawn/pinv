@@ -89,6 +89,17 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
 
     const [hasGenerated, setHasGenerated] = useState(!!(initialWidget && initialWidget.uiCode));
     const [currentGeneration, setCurrentGeneration] = useState<any>(null);
+    const [wasEdited, setWasEdited] = useState(false);
+
+    // Track if user manually edits code after generation (Task 20)
+    useEffect(() => {
+        if (currentGeneration && !wasEdited) {
+            if (uiCode !== currentGeneration.result.uiCode || dataCode !== currentGeneration.result.dataCode) {
+                console.log(\"[Feedback] User manually edited generated code\");
+                setWasEdited(true);
+            }
+        }
+    }, [uiCode, dataCode, currentGeneration, wasEdited]);
 
     // State for the LAST confirmed/previewed state (Sticky Preview)
     // We only enable save if the CURRENT editor state matches this exactly.
@@ -269,6 +280,7 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
                 },
                 model: result.model
             });
+            setWasEdited(false);
         }
     };
 
@@ -442,6 +454,32 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
                                         }
                                         return null;
                                     }}
+                                    onSuccess={async () => {
+                                        if (!currentGeneration) return;
+                                        // Implicit Feedback (Task 20)
+                                        const score = wasEdited ? 3 : 5;
+                                        const feedback = wasEdited ? \"Manually edited before save\" : \"Auto-accepted via save\";
+                                        
+                                        console.log(`[Feedback] Auto-submitting implicit score: ${score}`);
+                                        try {
+                                            await fetch('/api/feedback', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    generationId: currentGeneration.id,
+                                                    prompt: currentGeneration.prompt,
+                                                    result: currentGeneration.result,
+                                                    score,
+                                                    feedback,
+                                                    model: currentGeneration.model,
+                                                    status: dataCodeError ? 'error' : 'success',
+                                                    error: dataCodeError
+                                                }),
+                                            });
+                                        } catch (e) {
+                                            console.warn(\"Implicit feedback submission failed\", e);
+                                        }
+                                    }}
                                     disabled={isDataCodeRunning || isPreviewLoading || isDirty}
                                     className=\"w-full h-10 px-2 font-bold tracking-wider\"
                                 />
@@ -459,7 +497,9 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
                                                     prompt: currentGeneration.prompt,
                                                     result: currentGeneration.result,
                                                     score,
-                                                    model: currentGeneration.model
+                                                    model: currentGeneration.model,
+                                                    status: dataCodeError ? 'error' : 'success',
+                                                    error: dataCodeError
                                                 }),
                                             });
                                         } catch (e) {

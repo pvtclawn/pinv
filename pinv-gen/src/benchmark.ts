@@ -29,18 +29,20 @@ async function runBenchmark() {
     console.log(`📈 Average User Score: ${avgScore.toFixed(2)} / 5.0`);
 
     // Group by model
-    const modelStats: Record<string, { count: number, totalScore: number }> = {};
+    const modelStats: Record<string, { count: number, totalScore: number, successCount: number }> = {};
     entries.forEach(e => {
         const model = e.model || 'unknown';
-        if (!modelStats[model]) modelStats[model] = { count: 0, totalScore: 0 };
+        if (!modelStats[model]) modelStats[model] = { count: 0, totalScore: 0, successCount: 0 };
         modelStats[model].count++;
         modelStats[model].totalScore += e.score;
+        if (e.status === 'success') modelStats[model].successCount++;
     });
 
     console.log("\n🏗️  Model Performance Breakdown:");
     Object.entries(modelStats).forEach(([model, stats]) => {
         const avg = stats.totalScore / stats.count;
-        console.log(`   - ${model}: ${avg.toFixed(2)} (${stats.count} entries)`);
+        const successRate = (stats.successCount / stats.count) * 100;
+        console.log(`   - ${model}: ${avg.toFixed(2)} score, ${successRate.toFixed(1)}% success (${stats.count} entries)`);
     });
 
     console.log("\n✅ Benchmark summary complete.");

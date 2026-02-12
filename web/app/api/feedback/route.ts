@@ -9,7 +9,7 @@ import path from 'path';
 export async function POST(req: Request) {
     try {
         const data = await req.json();
-        const { generationId, prompt, result, score, feedback, model } = data;
+        const { generationId, prompt, result, score, feedback, model, status, error } = data;
 
         if (!score || score < 1 || score > 5) {
             return NextResponse.json({ error: 'Valid score (1-5) is required' }, { status: 400 });
@@ -22,7 +22,9 @@ export async function POST(req: Request) {
             result,
             score,
             feedback,
-            model
+            model,
+            status: status || 'success',
+            error: error || null
         };
 
         // Ensure directory exists
