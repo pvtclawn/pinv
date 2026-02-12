@@ -128,6 +128,19 @@ export async function generateOgImage(pinId: number, queryParams: Record<string,
 
     const props = { ...baseProps, title: pin.title, tagline: pin.tagline };
 
+    // --- SIZE GUARDS (Task 14) ---
+    // Prevent API 400 errors and resource exhaustion from large payloads.
+    const MAX_UI_CODE_SIZE = 100 * 1024; // 100KB
+    const MAX_PROPS_SIZE = 100 * 1024;   // 100KB
+
+    if (uiCode.length > MAX_UI_CODE_SIZE) {
+        throw new Error('UI_CODE_TOO_LARGE');
+    }
+    const propsJson = JSON.stringify(props);
+    if (propsJson.length > MAX_PROPS_SIZE) {
+        throw new Error('PROPS_TOO_LARGE');
+    }
+
     // 3. Worker Render (Using Helper)
     const { image: pngBuffer } = await renderImageInWorker(uiCode, props, OG_WIDTH, OG_HEIGHT);
 
