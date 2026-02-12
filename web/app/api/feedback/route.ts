@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { scrubSecrets } from '@/lib/utils/scrub';
 
 /**
  * Endpoint to collect RLHF-style feedback for widget generations.
@@ -15,16 +16,17 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Valid score (1-5) is required' }, { status: 400 });
         }
 
+        // Scrub sensitive data before saving to dataset
         const entry = {
             id: generationId || crypto.randomUUID(),
             timestamp: new Date().toISOString(),
-            prompt,
-            result,
+            prompt: scrubSecrets(prompt),
+            result: scrubSecrets(result),
             score,
-            feedback,
+            feedback: feedback ? scrubSecrets(feedback) : null,
             model,
             status: status || 'success',
-            error: error || null
+            error: error ? scrubSecrets(error) : null
         };
 
         // Ensure directory exists

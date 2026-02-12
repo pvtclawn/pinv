@@ -28,6 +28,7 @@ import PinDisplayCard from "../viewer/PinDisplayCard";
 import { Button } from "@/components/ui/button";
 import { Play, Settings2, Wand2, Code2, TerminalSquare, ChevronLeft, Loader2, Lock, Unlock } from "lucide-react";
 import { notify } from "@/components/shared/Notifications";
+import { getSimilarity } from "@/lib/utils/diff";
 
 interface PinEditorProps {
     pinId: number;
@@ -457,10 +458,30 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
                                     onSuccess={async () => {
                                         if (!currentGeneration) return;
                                         // Implicit Feedback (Task 20)
-                                        const score = wasEdited ? 3 : 5;
-                                        const feedback = wasEdited ? \"Manually edited before save\" : \"Auto-accepted via save\";
+                                        let score = 5;
+                                        let feedback = \"Auto-accepted via save\";
                                         
-                                        console.log(`[Feedback] Auto-submitting implicit score: ${score}`);
+                                        if (wasEdited) {
+                                            const simUI = getSimilarity(currentGeneration.result.uiCode, uiCode);
+                                            const simData = getSimilarity(currentGeneration.result.dataCode, dataCode);
+                                            const similarity = (simUI + simData) / 2;
+                                            
+                                            // Granular Mapping:
+                                            // 0.95+ -> 5
+                                            // 0.8+  -> 4
+                                            // 0.6+  -> 3
+                                            // 0.4+  -> 2
+                                            // <0.4  -> 1
+                                            if (similarity > 0.95) score = 5;
+                                            else if (similarity > 0.8) score = 4;
+                                            else if (similarity > 0.6) score = 3;
+                                            else if (similarity > 0.4) score = 2;
+                                            else score = 1;
+                                            
+                                            feedback = `Manually edited (Similarity: ${(similarity * 100).toFixed(1)}%)`;
+                                        }
+                                        
+                                        console.log(`[Feedback] Auto-submitting implicit score: ${score} (${feedback})`);
                                         try {
                                             await fetch('/api/feedback', {
                                                 method: 'POST',
