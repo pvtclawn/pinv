@@ -14,8 +14,9 @@ import { unwrapKeyForOwner, decryptData, EncryptedEnvelope } from "@/lib/crypto"
 import { EditorPrompt } from "./partials/EditorPrompt";
 import { EditorConfig } from "./partials/EditorConfig";
 import { EditorCode } from "./partials/EditorCode";
-import { EditorLogs } from "./partials/EditorLogs";
-import { SavePinButton } from "./partials/SavePinButton";
+import { EditorLogs } from \"./partials/EditorLogs\";
+import { GenerationFeedback } from \"./partials/GenerationFeedback\";
+import { SavePinButton } from \"./partials/SavePinButton\";
 import {
     Accordion,
     AccordionContent,
@@ -87,6 +88,7 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
     const [isUnlocking, setIsUnlocking] = useState(false);
 
     const [hasGenerated, setHasGenerated] = useState(!!(initialWidget && initialWidget.uiCode));
+    const [currentGeneration, setCurrentGeneration] = useState<any>(null);
 
     // State for the LAST confirmed/previewed state (Sticky Preview)
     // We only enable save if the CURRENT editor state matches this exactly.
@@ -251,6 +253,21 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
                 cid: '',
                 signature: undefined,
                 timestamp: undefined
+            });
+
+            // 3. Store for feedback
+            setCurrentGeneration({
+                id: result.id,
+                prompt: finalPrompt,
+                result: {
+                    title: result.title,
+                    tagline: result.tagline,
+                    dataCode: result.dataCode,
+                    uiCode: result.uiCode,
+                    parameters: result.parameters,
+                    previewData: result.previewData
+                },
+                model: result.model
             });
         }
     };
@@ -426,9 +443,31 @@ export default function PinEditor({ pinId, pin }: PinEditorProps) {
                                         return null;
                                     }}
                                     disabled={isDataCodeRunning || isPreviewLoading || isDirty}
-                                    className="w-full h-10 px-2 font-bold tracking-wider"
+                                    className=\"w-full h-10 px-2 font-bold tracking-wider\"
                                 />
                             </div>
+
+                            {currentGeneration && (
+                                <GenerationFeedback
+                                    onRate={async (score) => {
+                                        try {
+                                            await fetch('/api/feedback', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    generationId: currentGeneration.id,
+                                                    prompt: currentGeneration.prompt,
+                                                    result: currentGeneration.result,
+                                                    score,
+                                                    model: currentGeneration.model
+                                                }),
+                                            });
+                                        } catch (e) {
+                                            console.error(\"Failed to submit feedback\", e);
+                                        }
+                                    }}
+                                />
+                            )}
                         </div>
                     </PinDisplayCard>
 

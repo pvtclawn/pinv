@@ -3,6 +3,8 @@
 import { useState, useCallback } from "react";
 
 export interface GenerationResult {
+    id: string;
+    model: string;
     title?: string;
     tagline?: string;
     dataCode: string;
@@ -68,6 +70,8 @@ export function useWidgetGeneration(): UseWidgetGenerationReturn {
             const data = await response.json();
 
             const generationResult: GenerationResult = {
+                id: data.generationId,
+                model: data.model,
                 title: data.title,
                 tagline: data.tagline,
                 dataCode: data.data_code || "",

@@ -147,7 +147,11 @@ export async function POST(req: Request) {
 
         try {
             const result = JSON.parse(cleanContent);
-            return NextResponse.json(result);
+            return NextResponse.json({
+                ...result,
+                generationId: crypto.randomUUID(),
+                model
+            });
         } catch (e) {
             console.error("Failed to parse LLM JSON:", cleanContent);
             return NextResponse.json({

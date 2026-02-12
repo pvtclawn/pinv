@@ -135,11 +135,26 @@ Details: `memory/challenges/*.md`
 - [x] **P0**: Standardize "Social Proof" indicators on widgets. (Proves image data matches on-chain code).
 - [x] **P1**: Implement version-drift detection to ensure shared images reflect the latest data/logic.
 
+### Task 19: Dynamic Vision Hardening (NEW — from #879 red-team)
+**Goal:** Address caching, timeout, and centralization risks in the dynamic widget vision.
+**Acceptance criteria:**
+- [ ] **P0**: Pre-render images at mint time and cache CID on-chain/IPFS to prevent crawler unfurl timeouts.
+- [ ] **P1**: Add "Last Updated" relative timestamps to high-velocity templates (DEX Pairs).
+- [ ] **P2**: Implement data fallbacks (e.g., Uniswap subgraph) in `dex-pairs.json` to handle primary API failures.
+
+### Task 20: Widget Generation Perfection (NEW — branch `gen-feedback-research`)
+**Goal:** Implement RLHF-style feedback loops to improve widget generation.
+**Acceptance criteria:**
+- [ ] **Data Collection**: Add a 1-5 star rating component to the widget editor preview.
+- [ ] **Feedback API**: Create an endpoint to store `prompt -> result + score` pairs.
+- [ ] **New Package**: Initialize `pinv-ai` (or `pinv-gen`) to house the system prompts and evaluation logic.
+- [ ] **Prompt Iteration**: Use collected data to refine the `GENERATION_SYSTEM_PROMPT`.
+
 ## Next Steps (prioritized, Feb 12)
 
-1. **Task 18** (New Template) — Build a high-value "DEX Pairs" or "NFT Floor" template. (NEXT TASK)
-2. **Task 16** (MPC Prototype) — Research sovereign fund management for creators.
-3. **Task 9** (Advanced Hardening) — Creator Fund Recovery path.
+1. **Task 20** (Generation Research) — Branch `gen-feedback-research`. (CURRENT FOCUS)
+2. **Task 19** (Dynamic Vision Hardening) — Pre-rendering and timestamps.
+3. **Task 16** (MPC Prototype) — Research physical infrastructure separation.
 
 ## Key Decisions Needed from Egor
 1. ~~Switch widget generation from OpenRouter to VIN?~~ **Deprioritized** (Feb 11)
