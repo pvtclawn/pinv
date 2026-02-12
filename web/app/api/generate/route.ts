@@ -83,7 +83,11 @@ export async function POST(req: Request) {
         }
 
         // Per-IP rate limiting
-        const ip = req.headers.get('x-forwarded-for') || 'local';
+        // Use x-real-ip (set by Vercel from actual connection) over x-forwarded-for
+        // (which can be spoofed by the client via proxy headers)
+        const ip = req.headers.get('x-real-ip')
+            || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+            || 'local';
         const userLimit = rateLimitMap.get(ip);
 
         if (userLimit && now < userLimit.resetAt) {
