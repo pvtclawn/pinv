@@ -25,7 +25,7 @@
 | 10| Context Drift in Social Sharing | **HIGH** | ✅ Fixed (`018d8c1`) |
 | 11| Creator Fee Entrapment | HIGH | ❌ Open |
 | 12| Unverified Secret Provisioning | HIGH | ❌ Open |
-| 13| Proof of Execution (Watermarking) | MEDIUM | ❌ Open |
+| 13| Proof of Execution (Watermarking) | MEDIUM | ✅ Fixed (`06708f2`) |
 | 14| Mock interceptor in prod IPFS code | **P1** | ✅ Fixed (`b022b77`) |
 | 15| Test environment broken (146/193 fail) | **P1** | ✅ Fixed (scoped test paths, vitest compat) |
 
@@ -149,8 +149,8 @@ Details: `memory/challenges/*.md`
 - [x] **Feedback API**: Create an endpoint to store `prompt -> result + score` pairs. (Fixed in `ef6bf37`)
 - [x] **New Package**: Initialize `pinv-gen` to house system prompts and evaluation logic. (Fixed in `ef6bf37`)
 - [x] **Benchmark Suite**: Create a script in `pinv-gen` to run the dataset against prompt variants. (Fixed in `81fb0f3`)
-- [ ] **Implicit Signal Tracking (P0)**: Automatically track widget "Saves" (Score 5) and "Manual Edits" (Score 2) as high-volume feedback.
-- [ ] **Compiler Validation (P0)**: Integrate code-quality checks into the benchmark suite to distinguish between "Vibes" and "Functionality."
+- [x] **Implicit Signal Tracking (P0)**: Automatically track widget \"Saves\" (Score 5) and \"Manual Edits\" (Score 3) as high-volume feedback. (Fixed in `7526a37`)
+- [x] **Compiler Validation (P0)**: Integrate code-quality checks into the benchmark suite to distinguish between \"Vibes\" and \"Functionality.\" (Fixed in `7526a37`)
 - [ ] **Prompt Iteration**: Refine `GENERATION_SYSTEM_PROMPT` using benchmark results.
 
 ### Task 21: Gateway Infrastructure Hardening (NEW — from #889 red-team)
